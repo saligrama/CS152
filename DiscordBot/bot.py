@@ -57,9 +57,24 @@ class ModBot(discord.Client):
         
 
     async def on_raw_reaction_add(self, payload):
+        #only handles reactions in the mod channel
         if payload.channel_id != self.mod_channels[payload.guild_id].id:
             return
-        await self.mod_channels[payload.guild_id].send(f'reaction to message with {payload.emoji.name}')
+        #Igonres its own reactions
+        if payload.member.id == self.user.id:
+            return
+        
+        if payload.emoji.name == '🆘':
+            await self.mod_channels[payload.guild_id].send('In response to your 🆘 reaction : law enforcement is contacted for imminant danger')
+        if payload.emoji.name == '😵':
+            await self.mod_channels[payload.guild_id].send('In response to your 😵 reaction : law enforcement is contacted for CSAM')
+        if payload.emoji.name == '👿':
+            await self.mod_channels[payload.guild_id].send('In response to your 👿 reaction : TODO:implement what to do for malicious report')
+        if payload.emoji.name == '⏫':
+            await self.mod_channels[payload.guild_id].send('In response to your ⏫ reaction : report escelated to higher level reviewers')
+        
+        
+        
         
 
     async def on_message(self, message):
@@ -138,9 +153,25 @@ class ModBot(discord.Client):
         if self.reports[author_id].report_complete():
              # Forward the message to the mod channel
             mod_channel = self.mod_channels[message.guild.id]
-            await mod_channel.send(f'Forwarded message:\n{self.reports[author_id].message.author.name}: "{self.reports[author_id].message.content}"')
+            fwd = await mod_channel.send(f'Forwarded message:\n{self.reports[author_id].message.author.name}, (UID = {self.reports[author_id].message.author.id}) : "{self.reports[author_id].message.content}"')
+            await fwd.add_reaction('🆘')
+            await fwd.add_reaction('😵')
+            await fwd.add_reaction('👿')
+            await fwd.add_reaction('⏫')
+            
+            await mod_channel.send('Reported for:')
+            for r in responses:
+                await mod_channel.send(r)
+            
+
             scores = self.eval_text(self.reports[author_id].message.content)
             await mod_channel.send(self.code_format(scores))
+            await mod_channel.send('React to the forwarded message based on the moderator flow below: ')
+            await mod_channel.send('Is anyone in immediate danger? If yes React with : 🆘')
+            await mod_channel.send('Does this contain CSAM? If yes React with: 😵')
+            await mod_channel.send('Is this a malicious report? If yes react with: 👿')
+            await mod_channel.send('Do you need to escalate it to a higher level reviewer? If yes react with: ⏫')
+            
 
             #report is finished    
             self.reports.pop(author_id)
