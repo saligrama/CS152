@@ -103,11 +103,42 @@ class ModBot(discord.Client):
         if not message.channel.name == f'group-{self.group_num}':
             return
 
-        # Forward the message to the mod channel
-        mod_channel = self.mod_channels[message.guild.id]
-        await mod_channel.send(f'Forwarded message:\n{message.author.name}: "{message.content}"')
-        scores = self.eval_text(message.content)
-        await mod_channel.send(self.code_format(scores))
+        # Handle a help message
+        if message.content == Report.HELP_KEYWORD:
+            reply =  "Use the `report` command to begin the reporting process.\n"
+            reply += "Use the `cancel` command to cancel the report process.\n"
+            await message.channel.send(reply)
+            return
+
+        author_id = message.author.id
+        responses = []
+
+        # Only respond to messages if they're part of a reporting flow
+        if author_id not in self.reports and not message.content.startswith(Report.START_KEYWORD):
+            return
+
+        # If we don't currently have an active report for this user, add one
+        if author_id not in self.reports:
+            self.reports[author_id] = Report(self)
+        
+
+        # Let the report class handle this message; forward all the messages it returns to uss
+        responses = await self.reports[author_id].handle_message(message)
+        for r in responses:
+            await message.channel.send(r)
+
+        # If the report is complete or cancelled, remove it from our map
+        if self.reports[author_id].report_complete():
+             # Forward the message to the mod channel
+            mod_channel = self.mod_channels[message.guild.id]
+            await mod_channel.send(f'Forwarded message:\n{self.reports[author_id].message.author.name}: "{self.reports[author_id].message.content}"')
+            scores = self.eval_text(self.reports[author_id].message.content)
+            await mod_channel.send(self.code_format(scores))
+
+            #report is finished    
+            self.reports.pop(author_id)
+
+        
 
     
     def eval_text(self, message):
