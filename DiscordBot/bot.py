@@ -30,6 +30,7 @@ class ModBot(discord.Client):
     def __init__(self): 
         intents = discord.Intents.default()
         intents.message_content = True
+        intents.reactions = True
         super().__init__(command_prefix='.', intents=intents)
         self.group_num = None
         self.mod_channels = {} # Map from guild to the mod channel id for that guild
@@ -53,6 +54,12 @@ class ModBot(discord.Client):
             for channel in guild.text_channels:
                 if channel.name == f'group-{self.group_num}-mod':
                     self.mod_channels[guild.id] = channel
+        
+
+    async def on_raw_reaction_add(self, payload):
+        if payload.channel_id != self.mod_channels[payload.guild_id].id:
+            return
+        await self.mod_channels[payload.guild_id].send(f'reaction to message with {payload.emoji.name}')
         
 
     async def on_message(self, message):
