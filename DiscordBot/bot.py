@@ -118,6 +118,8 @@ class ModBot(discord.Client):
 
         # If the report is complete or cancelled, remove it from our map
         if self.reports[author_id].report_complete():
+            mod_channel = self.mod_channels[self.reports[author_id].message.guild.id]
+            await self.do_mod_flow(mod_channel, self.reports[author_id])
             self.reports.pop(author_id)
 
     async def handle_channel_message(self, message):
@@ -151,37 +153,37 @@ class ModBot(discord.Client):
 
         # If the report is complete or cancelled, remove it from our map
         if self.reports[author_id].report_complete():
-             # Forward the message to the mod channel
-            mod_channel = self.mod_channels[message.guild.id]
-            fwd = await mod_channel.send(f'Forwarded message:\n{self.reports[author_id].message.author.name}, (UID = {self.reports[author_id].message.author.id}) : "{self.reports[author_id].message.content}"')
-            await fwd.add_reaction('1️⃣')
-            await fwd.add_reaction('2️⃣')
-            await fwd.add_reaction('3️⃣')
-            await fwd.add_reaction('4️⃣')
-            context_strings = [f'{message.author.name} : "{message.content}" _({len(message.attachments)} attachments)_' for message in self.reports[author_id].context]
-            context_strings = '\n  '.join(context_strings)
-            await mod_channel.send(f'Surrounding context:\n  {context_strings}')
-
-            for a in self.reports[author_id].message.attachments:
-                await mod_channel.send(f'Has attachment with type "{a.content_type}" and description "{a.description}": ' + a.proxy_url)
-            
-            await mod_channel.send('Reported for:')
-            for r in responses:
-                await mod_channel.send(r)
-            
-
-            scores = self.eval_text(self.reports[author_id].message.content)
-            await mod_channel.send(self.code_format(scores))
-            await mod_channel.send('React to the forwarded message based on the moderator flow below: ')
-            await mod_channel.send('Is anyone in immediate danger? If yes React with : :one: ')
-            await mod_channel.send('Does this contain CSAM? If yes React with: :two:')
-            await mod_channel.send('Is this a malicious report? If yes react with: :three:')
-            await mod_channel.send('Do you need to escalate it to a higher level reviewer? If yes react with: :four:')
-            
-
             #report is finished    
+            mod_channel = self.mod_channels[message.guild.id]
+            await self.do_mod_flow(mod_channel, self.reports[author_id])
             self.reports.pop(author_id)
 
+        
+    async def do_mod_flow(self, mod_channel, report):
+        # Forward the message to the mod channel
+        fwd = await mod_channel.send(f'Forwarded message:\n{report.message.author.name}, (UID = {report.message.author.id}) : "{report.message.content}"')
+
+        await fwd.add_reaction('1️⃣')
+        await fwd.add_reaction('2️⃣')
+        await fwd.add_reaction('3️⃣')
+        await fwd.add_reaction('4️⃣')
+
+        context_strings = [f'{message.author.name} : "{message.content}" _({len(message.attachments)} attachments)_' for message in report.context]
+        context_strings = '\n  '.join(context_strings)
+        await mod_channel.send(f'Surrounding context:\n  {context_strings}')
+
+        for a in report.message.attachments:
+            await mod_channel.send(f'Has attachment with type "{a.content_type}" and description "{a.description}": ' + a.proxy_url)
+        
+        await mod_channel.send(f'Reported for: ({report.category}, {report.subcategory}, {report.subsubcategory})')        
+
+        scores = self.eval_text(report.message.content)
+        await mod_channel.send(self.code_format(scores))
+        await mod_channel.send('React to the forwarded message based on the moderator flow below: ')
+        await mod_channel.send('Is anyone in immediate danger? If yes React with : :one: ')
+        await mod_channel.send('Does this contain CSAM? If yes React with: :two:')
+        await mod_channel.send('Is this a malicious report? If yes react with: :three:')
+        await mod_channel.send('Do you need to escalate it to a higher level reviewer? If yes react with: :four:')
         
 
     

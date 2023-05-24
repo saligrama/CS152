@@ -33,6 +33,7 @@ class Report:
         self.client = client
         self.message = None
         self.context = None
+        self.category = self.subcategory = self.subsubcategory = None
     
     async def handle_message(self, message):
         '''
