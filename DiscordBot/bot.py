@@ -158,6 +158,12 @@ class ModBot(discord.Client):
             await fwd.add_reaction('2️⃣')
             await fwd.add_reaction('3️⃣')
             await fwd.add_reaction('4️⃣')
+            context_strings = [f'{message.author.name} : "{message.content}" _({len(message.attachments)} attachments)_' for message in self.reports[author_id].context]
+            context_strings = '\n  '.join(context_strings)
+            await mod_channel.send(f'Surrounding context:\n  {context_strings}')
+
+            for a in self.reports[author_id].message.attachments:
+                await mod_channel.send(f'Has attachment with type "{a.content_type}" and description "{a.description}": ' + a.proxy_url)
             
             await mod_channel.send('Reported for:')
             for r in responses:

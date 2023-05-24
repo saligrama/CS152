@@ -32,6 +32,7 @@ class Report:
         self.state = State.REPORT_START
         self.client = client
         self.message = None
+        self.context = None
     
     async def handle_message(self, message):
         '''
@@ -68,6 +69,8 @@ class Report:
             except discord.errors.NotFound:
                 return ["It seems this message was deleted or never existed. Please try again or say `cancel` to cancel."]
             self.message = message;
+            self.context = [message async for message in channel.history(around=message, limit=7)]
+            self.context.sort(key=lambda m: m.created_at)
 
             # Here we've found the message - it's up to you to decide what to do next!
             self.state = State.MESSAGE_IDENTIFIED
