@@ -44,6 +44,8 @@ class ModBot(discord.Client):
         self.mod_channels = {} # Map from guild to the mod channel id for that guild
         self.reports = {} # Map from user IDs to the state of their report
         self.mod_state = modState.MOD_REPORT_INACTIVE
+        self.reportMsgIDtoUserID = {}
+        self.userIDtoNumMalReports = {}
 
     async def on_ready(self):
         print(f'{self.user.name} has connected to Discord! It is these guilds:')
@@ -77,7 +79,16 @@ class ModBot(discord.Client):
         if payload.emoji.name == '2️⃣':
             await self.mod_channels[payload.guild_id].send('In response to your :two: reaction : law enforcement is contacted for CSAM')
         if payload.emoji.name == '3️⃣':
-            await self.mod_channels[payload.guild_id].send('In response to your :three: reaction : TODO:implement what to do for malicious report')
+            uid = self.reportMsgIDtoUserID[payload.message_id]
+            if (uid not in self.userIDtoNumMalReports.keys()):
+                self.userIDtoNumMalReports[uid] = 1
+            else: 
+                self.userIDtoNumMalReports[uid] += 1
+            
+            if (self.userIDtoNumMalReports[uid] == 1): 
+                await self.mod_channels[payload.guild_id].send(f'A waring has been issued to the user with user ID : {uid} for malicious report')
+            else:
+                await self.mod_channels[payload.guild_id].send(f'The reporting feature has been suspended for user ID : {uid} for x amount of time.')            
         if payload.emoji.name == '4️⃣':
             await self.mod_channels[payload.guild_id].send('In response to your :four: reaction : report escelated to higher level reviewers')
         
@@ -127,7 +138,7 @@ class ModBot(discord.Client):
         # If the report is complete or cancelled, remove it from our map
         if self.reports[author_id].report_complete():
             mod_channel = self.mod_channels[self.reports[author_id].message.guild.id]
-            await self.do_mod_flow(mod_channel, self.reports[author_id])
+            await self.do_mod_flow(mod_channel, self.reports[author_id], author_id)
             self.reports.pop(author_id)
 
     async def handle_channel_message(self, message):
@@ -201,13 +212,17 @@ class ModBot(discord.Client):
         if self.reports[author_id].report_complete():
             #report is finished    
             mod_channel = self.mod_channels[message.guild.id]
-            await self.do_mod_flow(mod_channel, self.reports[author_id])
+            await self.do_mod_flow(mod_channel, self.reports[author_id], author_id)
             self.reports.pop(author_id)
 
         
-    async def do_mod_flow(self, mod_channel, report):
+    async def do_mod_flow(self, mod_channel, report, author_id):
         # Forward the message to the mod channel
+        if author_id in self.userIDtoNumMalReports.keys() and self.userIDtoNumMalReports[author_id] > 1:
+            await mod_channel.send(f'User with uid : {author_id} has submitted a report however their reporting feature is suspended.')
+            return
         fwd = await mod_channel.send(f'Forwarded message:\n{report.message.author.name}, (UID = {report.message.author.id}) : "{report.message.content}"')
+        self.reportMsgIDtoUserID[fwd.id] = author_id 
         await fwd.add_reaction('1️⃣')
         await fwd.add_reaction('2️⃣')
         await fwd.add_reaction('3️⃣')
