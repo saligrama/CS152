@@ -11,11 +11,18 @@ import pdb
 from enum import Enum, auto
 
 class modState(Enum):
-    MOD_REPORT_START = auto()
     MOD_REPORT_INACTIVE = auto()
+    MOD_REPORT_START = auto()
+    MOD_REPORT_ILLEGAL = auto()
+    MOD_REPORT_CSAM = auto()
+    MOD_REPORT_MALICIOUS = auto()
     MOD_REPORT_INTIMATE_IMAGE = auto()
+    MOD_REPORT_CONSENSUAL = auto()
     MOD_REPORT_COERCIVE = auto()  
     MOD_REPORT_MINOR_VICTIM= auto()
+    MOD_REPORT_OTHER_CATEGORIES = auto()
+    MOD_REPORT_OTHER_CATEGORIES_ACTION_OUTCOMES = auto()
+    
 
 # Set up logging to the console
 logger = logging.getLogger('discord')
@@ -74,26 +81,9 @@ class ModBot(discord.Client):
             return
         #Igonres its own reactions
         if payload.member.id == self.user.id:
-            return
-        if payload.emoji.name == '1️⃣':
-            await self.mod_channels[payload.guild_id].send('In response to your :one: reaction : law enforcement is contacted for imminant danger')
-        if payload.emoji.name == '2️⃣':
-            await self.mod_channels[payload.guild_id].send('In response to your :two: reaction : law enforcement is contacted for CSAM')
-        if payload.emoji.name == '3️⃣':
-            uid = self.reportMsgIDtoUserID[payload.message_id]
-            if (uid not in self.userIDtoNumMalReports.keys()):
-                self.userIDtoNumMalReports[uid] = 1
-            else: 
-                self.userIDtoNumMalReports[uid] += 1
-            
-            if (self.userIDtoNumMalReports[uid] == 1): 
-                await self.mod_channels[payload.guild_id].send(f'A waring has been issued to the user with user ID : {uid} for malicious report')
-                await self.latestReport[uid].channel.send(f'User {self.latestReport[uid].author.name}: WARNING: If you report maliciously one more time your reporting feature will be suspended for x amount of time.')
-            else:
-                await self.mod_channels[payload.guild_id].send(f'The reporting feature has been suspended for user ID : {uid} for x amount of time.')
-                await self.latestReport[uid].channel.send(f'User {self.latestReport[uid].author.name}: Your reporting feature has been suspended for x amount of time.')            
-        if payload.emoji.name == '4️⃣':
-            await self.mod_channels[payload.guild_id].send('In response to your :four: reaction : report escelated to higher level reviewers')
+            return            
+        if payload.emoji.name == '⏫':
+            await self.mod_channels[payload.guild_id].send('In response to your ⏫ reaction : report escelated to higher level reviewers.')
         
         
         
@@ -148,39 +138,104 @@ class ModBot(discord.Client):
         mod_channel = self.mod_channels[message.guild.id]
         if self.mod_state == modState.MOD_REPORT_START and message.channel.name == f'group-{self.group_num}-mod':
             if message.content.lower() == 'yes':
+                self.mod_state = modState.MOD_REPORT_INACTIVE
+                await mod_channel.send('Report is sent to law enforcement.')
+                return
+            if message.content.lower() == 'no':
+                self.mod_state = modState.MOD_REPORT_ILLEGAL
+                await mod_channel.send('Is there any evidence of illegal financial transaction? Please respond with yes or no.')
+                return
+        if self.mod_state == modState.MOD_REPORT_ILLEGAL and message.channel.name == f'group-{self.group_num}-mod':
+            if message.content.lower() == 'yes':
+                self.mod_state = modState.MOD_REPORT_INACTIVE
+                await mod_channel.send('Report is sent to law enforcement.')
+                return
+            if message.content.lower() == 'no':
+                self.mod_state = modState.MOD_REPORT_CSAM
+                await mod_channel.send('Does this contain CSAM? Please respond with yes or no.')
+                return
+        if self.mod_state == modState.MOD_REPORT_CSAM and message.channel.name == f'group-{self.group_num}-mod':
+            if message.content.lower() == 'yes':
+                self.mod_state = modState.MOD_REPORT_INACTIVE
+                await mod_channel.send('Report is sent to NCMEC and the reported account is permanently banned')
+                return
+            if message.content.lower() == 'no':
+                self.mod_state = modState.MOD_REPORT_MALICIOUS
+                await mod_channel.send('Is this a malicious report? Please respond with yes or no.')
+                return
+        if self.mod_state == modState.MOD_REPORT_MALICIOUS and message.channel.name == f'group-{self.group_num}-mod':
+            if message.content.lower() == 'yes':
+                self.mod_state = modState.MOD_REPORT_INACTIVE
+                uid = message.author.id
+                if (uid not in self.userIDtoNumMalReports.keys()):
+                    self.userIDtoNumMalReports[uid] = 1
+                else: 
+                    self.userIDtoNumMalReports[uid] += 1
+                
+                if (self.userIDtoNumMalReports[uid] == 1): 
+                    await self.mod_channels[message.guild.id].send(f'A waring has been issued to the user with user ID : {uid} for malicious report')
+                    await self.latestReport[uid].channel.send(f'User {self.latestReport[uid].author.name}: WARNING: If you report maliciously one more time your reporting feature will be suspended for 7 days.')
+                else:
+                    await self.mod_channels[message.guild.id].send(f'The reporting feature has been suspended for user ID : {uid} for 7 days.')
+                    await self.latestReport[uid].channel.send(f'User {self.latestReport[uid].author.name}: Your reporting feature has been suspended for 7 days.')            
+                return
+            if message.content.lower() == 'no':
                 self.mod_state = modState.MOD_REPORT_INTIMATE_IMAGE
-                await mod_channel.send('Is the imagery consensually taken or shared? Please respond with yes or no.')
+                await mod_channel.send('Does the content include intimate imagery? Please respond with yes or no.')
+                return
+        if self.mod_state == modState.MOD_REPORT_INTIMATE_IMAGE and message.channel.name == f'group-{self.group_num}-mod':
+            if message.content.lower() == 'yes':
+                self.mod_state = modState.MOD_REPORT_CONSENSUAL
+                await mod_channel.send('Is the imagery consensually taken or shared? Please respond with yes or no')
                 return
             if message.content.lower() == 'no':
                 self.mod_state = modState.MOD_REPORT_COERCIVE
                 await mod_channel.send('Does the content coercively request intimate or sexual content? Please respond with yes or no.')
                 return
-        if self.mod_state == modState.MOD_REPORT_INTIMATE_IMAGE and message.channel.name == f'group-{self.group_num}-mod':
-            if message.content.lower() == 'yes':
-                self.mod_state = modState.MOD_REPORT_INACTIVE
-                await mod_channel.send('No action is taken and an explanation to reporter based on our criteria has been issued.')
-                return
-            if message.content.lower() == 'no':
-                self.mod_state = modState.MOD_REPORT_INACTIVE
-                await mod_channel.send('The perpetrator has been permanently banned. The user has been given the option to have their image(s) removed from the hash database.')
-                return
         if self.mod_state == modState.MOD_REPORT_COERCIVE and message.channel.name == f'group-{self.group_num}-mod':
             if message.content.lower() == 'yes':
                 self.mod_state = modState.MOD_REPORT_MINOR_VICTIM
-                await mod_channel.send('Is the victim a minor? Please respond with yes or no.')
+                await mod_channel.send('Is the victim a minor? Please respond with yes or no')
                 return
             if message.content.lower() == 'no':
-                self.mod_state = modState.MOD_REPORT_INACTIVE
-                await mod_channel.send('No action is taken and an explanation to reporter based on our criteria has been issued.')
+                self.mod_state = modState.MOD_REPORT_OTHER_CATEGORIES
+                await mod_channel.send('Does this post fall under any of our other categories of concern? (eg. spam, hate speech, bullying)? Please respond with yes or no.')
                 return
         if self.mod_state == modState.MOD_REPORT_MINOR_VICTIM and message.channel.name == f'group-{self.group_num}-mod':
             if message.content.lower() == 'yes':
                 self.mod_state = modState.MOD_REPORT_INACTIVE
-                await mod_channel.send('The perpetrator has been permanently banned. The user has been given the option to have their image(s) removed from the hash database.')
+                await mod_channel.send('The perpetrator has been warned and permanently banned.')
                 return
             if message.content.lower() == 'no':
                 self.mod_state = modState.MOD_REPORT_INACTIVE
-                await mod_channel.send('The perpetrator has been banned for 7-30 days')
+                await mod_channel.send('The perpetrator has been warned and banned for 7 days.')
+                return
+        if self.mod_state == modState.MOD_REPORT_OTHER_CATEGORIES and message.channel.name == f'group-{self.group_num}-mod':
+            if message.content.lower() == 'yes':
+                self.mod_state = modState.MOD_REPORT_OTHER_CATEGORIES_ACTION_OUTCOMES
+                await mod_channel.send('Select action outcome based on the severity of the reported content. Please respond with medium or high.')
+                return
+            if message.content.lower() == 'no':
+                self.mod_state = modState.MOD_REPORT_INACTIVE
+                await mod_channel.send('An explanation for no action has been issued to the reporter based on our criteria')
+                return
+        if self.mod_state == modState.MOD_REPORT_OTHER_CATEGORIES_ACTION_OUTCOMES and message.channel.name == f'group-{self.group_num}-mod':
+            if message.content.lower() == 'medium':
+                self.mod_state = modState.MOD_REPORT_INACTIVE
+                await mod_channel.send('The perpetrator has been warned, and their account has been banned for 7 days.')
+                return
+            if message.content.lower() == 'high':
+                self.mod_state = modState.MOD_REPORT_INACTIVE
+                await mod_channel.send('The perpetrator has been warned, and their account has been banned permanently')
+                return
+        if self.mod_state == modState.MOD_REPORT_CONSENSUAL and message.channel.name == f'group-{self.group_num}-mod':
+            if message.content.lower() == 'yes':
+                self.mod_state = modState.MOD_REPORT_INACTIVE
+                await mod_channel.send('An explanation for no action has been issued to the reporter based on our criteria')
+                return
+            if message.content.lower() == 'no':
+                self.mod_state = modState.MOD_REPORT_INACTIVE
+                await mod_channel.send('The perpetrator has been warned on the basis of violating our content policy and permanently banned. User is given the option to have the image(s) added to the hash database.')
                 return
          
         # Only handle messages sent in the "group-#" channel
@@ -228,10 +283,7 @@ class ModBot(discord.Client):
             return
         fwd = await mod_channel.send(f'Forwarded message:\n{report.message.author.name}, (UID = {report.message.author.id}) : "{report.message.content}"')
         self.reportMsgIDtoUserID[fwd.id] = author_id 
-        await fwd.add_reaction('1️⃣')
-        await fwd.add_reaction('2️⃣')
-        await fwd.add_reaction('3️⃣')
-        await fwd.add_reaction('4️⃣')
+        await fwd.add_reaction('⏫')
 
         context_strings = [f'{message.author.name} : "{message.content}" _({len(message.attachments)} attachments)_' for message in report.context]
         context_strings = '\n  '.join(context_strings)
@@ -244,12 +296,8 @@ class ModBot(discord.Client):
 
         scores = self.eval_text(report.message.content)
         await mod_channel.send(self.code_format(scores))
-        await mod_channel.send('React to the forwarded message based on the moderator flow below: ')
-        await mod_channel.send('Is anyone in immediate danger? If yes React with : :one: ')
-        await mod_channel.send('Does this contain CSAM? If yes React with: :two:')
-        await mod_channel.send('Is this a malicious report? If yes react with: :three:')
-        await mod_channel.send('Do you need to escalate it to a higher level reviewer? If yes react with: :four:')
-        await mod_channel.send('Does the content include intimate imagery? Please respond with yes or no.')
+        await mod_channel.send('React with ⏫ to the forwarded message, At any point in the process to escalate to higher level reviewers in case of ambiguity.')
+        await mod_channel.send('Is anyone in immediate danger? Please respond with yes or no.')
         self.mod_state = modState.MOD_REPORT_START
         
 
