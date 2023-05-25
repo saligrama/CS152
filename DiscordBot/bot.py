@@ -7,11 +7,13 @@ import logging
 import re
 import requests
 from report import Report
+from review import Review
+from malicious_reports import MaliciousReports
 import pdb
 from enum import Enum, auto
 
 
-class modState(Enum):
+class ModState(Enum):
     MOD_REPORT_INACTIVE = auto()
     MOD_REPORT_START = auto()
     MOD_REPORT_ILLEGAL = auto()
@@ -53,10 +55,9 @@ class ModBot(discord.Client):
         self.group_num = None
         self.mod_channels = {}  # Map from guild to the mod channel id for that guild
         self.reports = {}  # Map from user IDs to the state of their report
-        self.mod_state = modState.MOD_REPORT_INACTIVE
-        self.reportMsgIDtoUserID = {}
-        self.userIDtoNumMalReports = {}
-        self.latestReport = {}
+        self.reviews = {}  # Map from message IDs to the state of their report
+        self.mod_state = ModState.MOD_REPORT_INACTIVE
+        self.malicious_reports = MaliciousReports()
 
     async def on_ready(self):
         print(f"{self.user.name} has connected to Discord! It is these guilds:")
@@ -79,19 +80,16 @@ class ModBot(discord.Client):
                 if channel.name == f"group-{self.group_num}-mod":
                     self.mod_channels[guild.id] = channel
 
-    async def on_raw_reaction_add(self, payload):
-        # only handles reactions in the mod channel
-        if payload.channel_id != self.mod_channels[payload.guild_id].id:
-            return
-        # Igonres its own reactions
-        if payload.member.id == self.user.id:
-            return
-        if payload.emoji.name == "⏫":
-            await self.mod_channels[payload.guild_id].send(
-                "Report escalated to higher level reviewers due to ⏫ reaction."
-            )
+    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
+        # only handles reactions in the mod channel that are not its own
+        if (
+            payload.channel_id == self.mod_channels[payload.guild_id].id
+            and payload.member.id != self.user.id
+        ):
+            # hacky, TODO
+            await next(iter(self.reviews.values())).handle_raw_reaction(payload)
 
-    async def on_message(self, message):
+    async def on_message(self, message: discord.Message):
         """
         This function is called whenever a message is sent in a channel that the bot can see (including DMs).
         Currently the bot is configured to only handle messages that are sent over DMs or in your group's "group-#" channel.
@@ -106,7 +104,7 @@ class ModBot(discord.Client):
         else:
             await self.handle_dm(message)
 
-    async def handle_dm(self, message):
+    async def handle_user_message(self, message: discord.Message):
         # Handle a help message
         if message.content == Report.HELP_KEYWORD:
             reply = "Use the `report` command to begin the reporting process.\n"
@@ -140,266 +138,35 @@ class ModBot(discord.Client):
             )
             self.reports.pop(author_id)
 
-    async def handle_channel_message(self, message):
-        mod_channel = self.mod_channels[message.guild.id]
-        if (
-            self.mod_state == modState.MOD_REPORT_START
-            and message.channel.name == f"group-{self.group_num}-mod"
-        ):
-            if message.content.lower() == "yes":
-                self.mod_state = modState.MOD_REPORT_INACTIVE
-                await mod_channel.send("Report has been sent to law enforcement.")
-                return
-            if message.content.lower() == "no":
-                self.mod_state = modState.MOD_REPORT_ILLEGAL
-                await mod_channel.send(
-                    "Is there any evidence of illegal financial transactions? Please respond with yes or no."
-                )
-                return
-        if (
-            self.mod_state == modState.MOD_REPORT_ILLEGAL
-            and message.channel.name == f"group-{self.group_num}-mod"
-        ):
-            if message.content.lower() == "yes":
-                self.mod_state = modState.MOD_REPORT_INACTIVE
-                await mod_channel.send("Report has been sent to law enforcement.")
-                return
-            if message.content.lower() == "no":
-                self.mod_state = modState.MOD_REPORT_CSAM
-                await mod_channel.send(
-                    "Does this contain CSAM? Please respond with yes or no."
-                )
-                return
-        if (
-            self.mod_state == modState.MOD_REPORT_CSAM
-            and message.channel.name == f"group-{self.group_num}-mod"
-        ):
-            if message.content.lower() == "yes":
-                self.mod_state = modState.MOD_REPORT_INACTIVE
-                await mod_channel.send(
-                    "Report is sent to NCMEC and the reported account is permanently banned"
-                )
-                return
-            if message.content.lower() == "no":
-                self.mod_state = modState.MOD_REPORT_MALICIOUS
-                await mod_channel.send(
-                    "Is this a malicious report? Please respond with yes or no."
-                )
-                return
-        if (
-            self.mod_state == modState.MOD_REPORT_MALICIOUS
-            and message.channel.name == f"group-{self.group_num}-mod"
-        ):
-            if message.content.lower() == "yes":
-                self.mod_state = modState.MOD_REPORT_INACTIVE
-                uid = message.author.id
-                if uid not in self.userIDtoNumMalReports.keys():
-                    self.userIDtoNumMalReports[uid] = 1
-                else:
-                    self.userIDtoNumMalReports[uid] += 1
+    async def handle_dm(self, message: discord.Message):
+        await self.handle_user_message(message)
 
-                if self.userIDtoNumMalReports[uid] == 1:
-                    await self.mod_channels[message.guild.id].send(
-                        f"A warning has been issued to the user with user ID : {uid} for malicious report"
-                    )
-                    await self.latestReport[uid].channel.send(
-                        f"User {self.latestReport[uid].author.name}: WARNING: Upon review of your report, we found that your report was made maliciously. If you continue to abuse the reporting feature this way, we will suspend your ability to report messages for 7 days upon your next infraction."
-                    )
-                else:
-                    await self.mod_channels[message.guild.id].send(
-                        f"The reporting feature has been suspended for user ID : {uid} for 7 days."
-                    )
-                    await self.latestReport[uid].channel.send(
-                        f"User {self.latestReport[uid].author.name}: Your ability to report messages has been suspended for 7 days."
-                    )
-                return
-            if message.content.lower() == "no":
-                self.mod_state = modState.MOD_REPORT_INTIMATE_IMAGE
-                await mod_channel.send(
-                    "Does the content include intimate imagery? Please respond with yes or no."
-                )
-                return
-        if (
-            self.mod_state == modState.MOD_REPORT_INTIMATE_IMAGE
-            and message.channel.name == f"group-{self.group_num}-mod"
-        ):
-            if message.content.lower() == "yes":
-                self.mod_state = modState.MOD_REPORT_CONSENSUAL
-                await mod_channel.send(
-                    "Is the imagery consensually taken or shared? Please respond with yes or no"
-                )
-                return
-            if message.content.lower() == "no":
-                self.mod_state = modState.MOD_REPORT_COERCIVE
-                await mod_channel.send(
-                    "Does the content coercively request intimate or sexual content? Please respond with yes or no."
-                )
-                return
-        if (
-            self.mod_state == modState.MOD_REPORT_COERCIVE
-            and message.channel.name == f"group-{self.group_num}-mod"
-        ):
-            if message.content.lower() == "yes":
-                self.mod_state = modState.MOD_REPORT_MINOR_VICTIM
-                await mod_channel.send(
-                    "Is the victim a minor? Please respond with yes or no"
-                )
-                return
-            if message.content.lower() == "no":
-                self.mod_state = modState.MOD_REPORT_OTHER_CATEGORIES
-                await mod_channel.send(
-                    "Does this post fall under any of our other categories of concern? (eg. spam, hate speech, bullying)? Please respond with yes or no."
-                )
-                return
-        if (
-            self.mod_state == modState.MOD_REPORT_MINOR_VICTIM
-            and message.channel.name == f"group-{self.group_num}-mod"
-        ):
-            if message.content.lower() == "yes":
-                self.mod_state = modState.MOD_REPORT_INACTIVE
-                await mod_channel.send(
-                    "The perpetrator has been warned and permanently banned."
-                )
-                return
-            if message.content.lower() == "no":
-                self.mod_state = modState.MOD_REPORT_INACTIVE
-                await mod_channel.send(
-                    "The perpetrator has been warned and banned for 7 days."
-                )
-                return
-        if (
-            self.mod_state == modState.MOD_REPORT_OTHER_CATEGORIES
-            and message.channel.name == f"group-{self.group_num}-mod"
-        ):
-            if message.content.lower() == "yes":
-                self.mod_state = modState.MOD_REPORT_OTHER_CATEGORIES_ACTION_OUTCOMES
-                await mod_channel.send(
-                    "Select action outcome based on the severity of the reported content. Please respond with medium or high."
-                )
-                return
-            if message.content.lower() == "no":
-                self.mod_state = modState.MOD_REPORT_INACTIVE
-                await mod_channel.send(
-                    "An explanation for no action has been issued to the reporter based on our criteria."
-                )
-                return
-        if (
-            self.mod_state == modState.MOD_REPORT_OTHER_CATEGORIES_ACTION_OUTCOMES
-            and message.channel.name == f"group-{self.group_num}-mod"
-        ):
-            if message.content.lower() == "medium":
-                self.mod_state = modState.MOD_REPORT_INACTIVE
-                await mod_channel.send(
-                    "The perpetrator has been warned, and their account has been banned for 7 days."
-                )
-                return
-            if message.content.lower() == "high":
-                self.mod_state = modState.MOD_REPORT_INACTIVE
-                await mod_channel.send(
-                    "The perpetrator has been warned, and their account has been banned permanently."
-                )
-                return
-        if (
-            self.mod_state == modState.MOD_REPORT_CONSENSUAL
-            and message.channel.name == f"group-{self.group_num}-mod"
-        ):
-            if message.content.lower() == "yes":
-                self.mod_state = modState.MOD_REPORT_INACTIVE
-                await mod_channel.send(
-                    "An explanation for no action has been issued to the reporter based on our criteria."
-                )
-                return
-            if message.content.lower() == "no":
-                self.mod_state = modState.MOD_REPORT_INACTIVE
-                await mod_channel.send(
-                    "The perpetrator has been warned on the basis of violating our content policy and permanently banned. The user has been given the option to have the image(s) added to the hash database."
-                )
-                return
+    async def handle_channel_message(self, message: discord.Message):
+        mod_channel = self.mod_channels[message.guild.id]
 
         # Only handle messages sent in the "group-#" channel
-        if not message.channel.name == f"group-{self.group_num}":
-            return
+        if message.channel.name == f"group-{self.group_num}":
+            await self.handle_user_message(message)
+        elif message.channel.name == f"group-{self.group_num}-mod":
+            await next(iter(self.reviews.values())).handle_message(message)
 
-        # Handle a help message
-        if message.content == Report.HELP_KEYWORD:
-            reply = "Use the `report` command to begin the reporting process.\n"
-            reply += "Use the `cancel` command to cancel the report process.\n"
-            await message.channel.send(reply)
-            return
+        # temporary abstraction: only one report at a time
+        if len(self.reviews) > 0:
+            key = next(iter(self.reviews))
+            if self.reviews[key].is_done():
+                del self.reviews[key]
 
-        author_id = message.author.id
-        responses = []
-
-        # Only respond to messages if they're part of a reporting flow
-        if author_id not in self.reports and not message.content.startswith(
-            Report.START_KEYWORD
-        ):
-            return
-
-        # If we don't currently have an active report for this user, add one
-        if author_id not in self.reports:
-            self.reports[author_id] = Report(self)
-
-        # Let the report class handle this message; forward all the messages it returns to uss
-        responses = await self.reports[author_id].handle_message(message)
-        for r in responses:
-            await message.channel.send(r)
-
-        # If the report is complete or cancelled, remove it from our map
-        if self.reports[author_id].report_complete():
-            # report is finished
-            mod_channel = self.mod_channels[message.guild.id]
-            await self.do_mod_flow(
-                mod_channel, self.reports[author_id], author_id, message
-            )
-            self.reports.pop(author_id)
-
-    async def do_mod_flow(self, mod_channel, report, author_id, message):
-        # Forward the message to the mod channel
-        self.latestReport[author_id] = message
-        if (
-            author_id in self.userIDtoNumMalReports.keys()
-            and self.userIDtoNumMalReports[author_id] > 1
-        ):
-            await message.channel.send(
-                f"User {message.author.name}, your reporting feature has been suspended."
-            )
-            await mod_channel.send(
-                f"User with uid: {author_id} ({report.message.author.name}) has submitted a report, but their reporting feature is suspended due to a history of malicious reports."
-            )
-            return
-        fwd = await mod_channel.send(
-            f'Forwarded message:\n{report.message.author.name}, (UID = {report.message.author.id}) : "{report.message.content}"'
+    async def do_mod_flow(
+        self,
+        mod_channel: discord.TextChannel,
+        report: Report,
+        author_id: int,
+        message: discord.Message,
+    ):
+        self.reviews[message.id] = Review(
+            mod_channel, message, report, self.malicious_reports
         )
-        self.reportMsgIDtoUserID[fwd.id] = author_id
-        await fwd.add_reaction("⏫")
-
-        context_strings = [
-            f'{message.author.name} : "{message.content}" _({len(message.attachments)} attachments)_'
-            for message in report.context
-        ]
-        context_strings = "\n  ".join(context_strings)
-        await mod_channel.send(f"Surrounding context:\n  {context_strings}")
-
-        for a in report.message.attachments:
-            await mod_channel.send(
-                f'Has attachment with type "{a.content_type}" and description "{a.description}": '
-                + a.proxy_url
-            )
-
-        await mod_channel.send(
-            f"Reported for: ({report.category}, {report.subcategory}, {report.subsubcategory})"
-        )
-
-        scores = self.eval_text(report.message.content)
-        await mod_channel.send(self.code_format(scores))
-        await mod_channel.send(
-            "At any point during the report handling process, please react with ⏫ to the forwarded message to escalate to higher level reviewers in case of ambiguity."
-        )
-        await mod_channel.send(
-            "Is anyone in immediate danger? Please respond with yes or no."
-        )
-        self.mod_state = modState.MOD_REPORT_START
+        await self.reviews[message.id].begin_mod_flow()
 
     def eval_text(self, message):
         """'
