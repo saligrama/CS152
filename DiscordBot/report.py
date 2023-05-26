@@ -2,48 +2,43 @@ from enum import Enum, auto
 import discord
 import re
 
-
 class State(Enum):
     REPORT_START = auto()
     AWAITING_MESSAGE = auto()
     MESSAGE_IDENTIFIED = auto()
-    """ Added the following 4 to facilitate more advanced state reception. """
     AWAITING_CATEGORY = auto()
     AWAITING_SUBCATEGORY = auto()
     AWAITING_SUBSUBCATEGORY = auto()
     AWAITING_CONFIRMATION = auto()
     REPORT_COMPLETE = auto()
 
-
 class Report:
     START_KEYWORD = "report"
     CANCEL_KEYWORD = "cancel"
     HELP_KEYWORD = "help"
-    """ Added the following to categorize abuse types. """
+    EMOJI_CANCEL = "❌"
+
+    CATEGORY_EMOJIS = {
+        "spam": "1️⃣",
+        "offensive content": "2️⃣",
+        "harassment": "3️⃣",
+        "imminent danger": "4️⃣",
+    }
+
+    SUBCATEGORY_EMOJIS = ["🇦", "🇧", "🇨", "🇩", "🇪"]
+    SUBSUBCATEGORY_EMOJIS = ["⭐", "🌟", "💫", "✨", "🌠"]
+
     CATEGORIES = {
-        "spam": ["fraud", "impersonation", "solicitation"],
-        "offensive content": [
-            "unwanted sexual content",
-            "child sexual abuse content",
-            "violence and gore",
-            "non-consensual sharing of, or threats to share, intimate imagery",
-            "terroristic content",
-        ],
-        "harassment": [
-            "bullying",
-            "hate speech",
-            "sexual harassment",
-            "non-consensual sharing of, or threats to share, intimate imagery",
-        ],
-        "imminent danger": {
-            "self-harm and suicide": [],
-            "threats": [
-                "threatening violence",
-                "glorifying violence",
-                "publicizing private information",
-                "non-consensual sharing of, or threats to share, intimate imagery",
-            ],
-        },
+        "spam": ["spam1", "spam2", "spam3"],
+        "offensive content": ["offensive1", "offensive2", "offensive3"],
+        "harassment": ["harassment1", "harassment2", "harassment3"],
+        "imminent danger": ["danger1", "danger2", "danger3"],
+    }
+
+    SUBCATEGORIES = {
+        "spam1": ["subspam1a", "subspam1b"],
+        "spam2": ["subspam2a", "subspam2b"],
+        # ...
     }
 
     def __init__(self, client):
@@ -51,29 +46,72 @@ class Report:
         self.client = client
         self.message = None
         self.context = None
-        self.category = self.subcategory = self.subsubcategory = None
+        self.category = None
+        self.subcategory = None
+        self.subsubcategory = None
 
-    async def handle_message(self, message):
-        """
-        This function makes up the meat of the user-side reporting flow. It defines how we transition between states and what
-        prompts to offer at each of those states. You're welcome to change anything you want; this skeleton is just here to
-        get you started and give you a model for working with Discord.
-        """
+    async def handle_reaction(self, reaction, user):
+        if reaction.message.author.id != self.client.user.id:
+            return []
 
-        if message.content == self.CANCEL_KEYWORD:
+        if reaction.emoji == self.EMOJI_CANCEL:
             self.state = State.REPORT_COMPLETE
             return ["Report cancelled."]
 
-        if self.state == State.REPORT_START:
-            reply = "Thank you for starting the reporting process. "
-            reply += "Say `help` at any time for more information.\n\n"
-            reply += "Please copy paste the link to the message you want to report.\n"
-            reply += "You can obtain this link by right-clicking the message and clicking `Copy Message Link`."
-            self.state = State.AWAITING_MESSAGE
-            return [reply]
+        if self.state == State.AWAITING_CATEGORY:
+            for category, emoji in self.CATEGORY_EMOJIS.items():
+                if reaction.emoji == emoji:
+                    self.category = category
+                    self.state = State.AWAITING_SUBCATEGORY
+                    return [
+                        f"You've selected {self.category}. Please select the subcategory."
+                    ]
 
-        if self.state == State.AWAITING_MESSAGE:
-            # Parse out the three ID strings from the message link
+        if self.state == State.AWAITING_SUBCATEGORY:
+            for i, subcategory in enumerate(self.CATEGORIES[self.category]):
+                if reaction.emoji == self.SUBCATEGORY_EMOJIS[i]:
+                    self.subcategory = subcategory
+                    self.state = State.AWAITING_SUBSUBCATEGORY
+                    return [
+                        f"You've selected {self.subcategory}. Please select the subsubcategory."
+                    ]
+
+        if self.state == State.AWAITING_SUBSUBCATEGORY:
+            for i, subsubcategory in enumerate(self.SUBCATEGORIES[self.subcategory]):
+                if reaction.emoji == self.SUBSUBCATEGORY_EMOJIS[i]:
+                    self.subsubcategory = subsubcategory
+                    self.state = State.AWAITING_CONFIRMATION
+                    return [
+                        f"You've selected {self.subsubcategory}. Please confirm your selection."
+                    ]
+
+        return []
+
+    def report_complete(self):
+        return self.state == State.REPORT_COMPLETE
+
+class MyClient(discord.Client):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.report = Report(self)
+
+    async def on_ready(self):
+        print(f'We have logged in as {self.user}')
+
+    async def on_message(self, message):
+        if message.author == self.user:
+            return
+
+        if message.content == self.report.START_KEYWORD:
+            await message.channel.send(
+                "Thank you for starting the reporting process. "
+                "Say `help` at any time for more information.\n\n"
+                "Please copy paste the link to the message you want to report.\n"
+                "You can obtain this link by right-clicking the message and clicking `Copy Message Link`."
+            )
+            self.report.state = State.AWAITING_MESSAGE
+
+        elif self.report.state == State.AWAITING_MESSAGE:
             m = re.search("/(\d+)/(\d+)/(\d+)", message.content)
             if not m:
                 return [
@@ -104,99 +142,39 @@ class Report:
             # Here we've found the message - it's up to you to decide what to do next!
             self.state = State.MESSAGE_IDENTIFIED
 
-        # modified - select top category
-        if self.state == State.MESSAGE_IDENTIFIED:
-            self.state = State.AWAITING_CATEGORY
-            return [
-                "I found this message:",
-                "```" + message.author.name + ": " + message.content + "```",
-                "Please specify the category of the issue: "
-                + ", ".join(self.CATEGORIES.keys()),
-            ]
+        elif self.report.state == State.MESSAGE_IDENTIFIED:
+            reply_message = await message.channel.send(
+                "Please specify the category of the issue by reacting to this message: "
+                f"{', '.join(f'{emoji} for {category}' for category, emoji in self.report.CATEGORY_EMOJIS.items())}"
+            )
+            for emoji in self.report.CATEGORY_EMOJIS.values():
+                await reply_message.add_reaction(emoji)
+            self.report.state = State.AWAITING_CATEGORY
 
-        # added - recieve top category
-        if self.state == State.AWAITING_CATEGORY:
-            self.category = message.content.lower()
-            if self.category not in self.CATEGORIES:
-                return [
-                    "Invalid category. Please specify one of the following: "
-                    + ", ".join(self.CATEGORIES.keys())
-                ]
-            self.state = State.AWAITING_SUBCATEGORY
-            if (
-                self.category == "imminent danger"
-            ):  # dif implementation because of nested subcategory
-                return [
-                    "You've selected "
-                    + self.category
-                    + ". Please specify the subcategory: "
-                    + ", ".join(self.CATEGORIES[self.category].keys())
-                ]
-            else:
-                return [
-                    "You've selected "
-                    + self.category
-                    + ". Please specify the subcategory: "
-                    + ", ".join(self.CATEGORIES[self.category])
-                ]
+        elif self.report.state == State.AWAITING_CATEGORY:
+            reply_message = await message.channel.send(
+                "Please specify the subcategory of the issue by reacting to this message: "
+                f"{', '.join(f'{emoji} for {subcategory}' for i, subcategory in enumerate(self.report.CATEGORIES[self.report.category]))}"
+            )
+            for emoji in self.report.SUBCATEGORY_EMOJIS[:len(self.report.CATEGORIES[self.report.category])]:
+                await reply_message.add_reaction(emoji)
+            self.report.state = State.AWAITING_SUBCATEGORY
 
-        # added - recieve subcategory
-        if self.state == State.AWAITING_SUBCATEGORY:
-            self.subcategory = message.content.lower()
-            if self.subcategory == "threats" and self.category == "imminent danger":
-                self.state = State.AWAITING_SUBSUBCATEGORY
-                return [
-                    "You've selected "
-                    + self.subcategory
-                    + ". Please specify the subcategory of 'Threats': "
-                    + ", ".join(self.CATEGORIES[self.category][self.subcategory])
-                ]
-            else:
-                self.state = State.AWAITING_CONFIRMATION
-                return [
-                    f"You've selected '{self.subcategory}'. Please confirm by replying 'confirm' or restart the process by replying 'cancel'."
-                ]
+        elif self.report.state == State.AWAITING_SUBCATEGORY:
+            reply_message = await message.channel.send(
+                "Please specify the subsubcategory of the issue by reacting to this message: "
+                f"{', '.join(f'{emoji} for {subsubcategory}' for i, subsubcategory in enumerate(self.report.SUBCATEGORIES[self.report.subcategory]))}"
+            )
+            for emoji in self.report.SUBSUBCATEGORY_EMOJIS[:len(self.report.SUBCATEGORIES[self.report.subcategory])]:
+                await reply_message.add_reaction(emoji)
+            self.report.state = State.AWAITING_SUBSUBCATEGORY
 
-        # added - recieve subsubcategory
-        if self.state == State.AWAITING_SUBSUBCATEGORY:
-            self.subsubcategory = message.content.lower()
-            if (
-                self.subsubcategory
-                not in self.CATEGORIES[self.category][self.subcategory]
-            ):
-                return [
-                    "Invalid subsubcategory. Please specify one of the following: "
-                    + ", ".join(self.CATEGORIES[self.category][self.subcategory])
-                ]
-            self.state = State.AWAITING_CONFIRMATION
-            return [
-                "You've selected "
-                + self.subsubcategory
-                + ". Please confirm your selection by saying 'confirm' or restart by saying 'cancel'."
-            ]
+    async def on_reaction_add(self, reaction, user):
+        if user != self.user:
+            responses = await self.report.handle_reaction(reaction, user)
+            for response in responses:
+                await reaction.message.channel.send(response)
+            if self.report.report_complete():
+                self.report = Report(self)  # reset the report
 
-        # modified - recieve confirmation
-        if self.state == State.AWAITING_CONFIRMATION:
-            if message.content.lower() == "confirm":
-                self.state = State.REPORT_COMPLETE
-                return [
-                    "Report confirmed. Your selection: Category - "
-                    + self.category
-                    + ", Subcategory - "
-                    + self.subcategory
-                    + (
-                        ", Subsubcategory - " + self.subsubcategory
-                        if self.category == "imminent danger"
-                        and self.subcategory == "threats"
-                        else ""
-                    )
-                    + ". Thank you for your report."
-                ]
-            else:
-                return [
-                    "Invalid response. Please confirm your selection by saying 'confirm' or restart by saying 'cancel'."
-                ]
-        return []
-
-    def report_complete(self):
-        return self.state == State.REPORT_COMPLETE
+client = MyClient()
