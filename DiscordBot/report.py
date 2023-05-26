@@ -108,8 +108,8 @@ class Report:
             return [
                 "I found this message:",
                 "```" + message.author.name + ": " + message.content + "```",
-                "Please specify the category of the issue: \n"
-                + "     \n".join(self.CATEGORIES.keys()),
+                "Please specify the category of the issue: \n     "
+                + "\n     ".join(self.CATEGORIES.keys()),
             ]
 
         # added - recieve top category
@@ -117,8 +117,8 @@ class Report:
             self.category = message.content.lower()
             if self.category not in self.CATEGORIES:
                 return [
-                    "Invalid category. Please specify one of the following: \n"
-                    + "     \n".join(self.CATEGORIES.keys())
+                    "Invalid category. Please specify one of the following: \n     "
+                    + "\n     ".join(self.CATEGORIES.keys())
                 ]
             self.state = State.AWAITING_SUBCATEGORY
             if (
@@ -128,15 +128,15 @@ class Report:
                 return [
                     "You've selected "
                     + self.category
-                    + ". Please specify the subcategory: \n"
-                    + "     \n".join(self.CATEGORIES[self.category].keys())
+                    + ". Please specify the subcategory: \n     "
+                    + "\n     ".join(self.CATEGORIES[self.category].keys())
                 ]
             else:
                 return [
                     "You've selected "
                     + self.category
-                    + ". Please specify the subcategory: \n"
-                    + "     \n".join(self.CATEGORIES[self.category])
+                    + ". Please specify the subcategory: \n     "
+                    + "\n     ".join(self.CATEGORIES[self.category])
                 ]
 
         # added - recieve subcategory
@@ -147,8 +147,8 @@ class Report:
                 return [
                     "You've selected "
                     + self.subcategory
-                    + ". Please specify the subcategory of 'Threats': \n"
-                    + "     \n".join(self.CATEGORIES[self.category][self.subcategory])
+                    + ". Please specify the subcategory of 'Threats': \n     "
+                    + "\n     ".join(self.CATEGORIES[self.category][self.subcategory])
                 ]
             else:
                 self.state = State.AWAITING_CONFIRMATION
@@ -164,8 +164,8 @@ class Report:
                 not in self.CATEGORIES[self.category][self.subcategory]
             ):
                 return [
-                    "Invalid subsubcategory. Please specify one of the following: \n"
-                    + "     \n".join(self.CATEGORIES[self.category][self.subcategory])
+                    "Invalid subsubcategory. Please specify one of the following: \n     "
+                    + "\n     ".join(self.CATEGORIES[self.category][self.subcategory])
                 ]
             self.state = State.AWAITING_CONFIRMATION
             return [
@@ -221,7 +221,7 @@ class Report:
                 self.state = State.REPORT_COMPLETE
                 return ["Okay, the user will not be blocked. Thank you for your report."]
             else:
-                return ["Invalid response. Please reply 'block' to block the user or 'no' to not block."]
+                return ["Invalid response. Please reply 'yes' to block the user or 'no' to not block."]
         return []
 
 
