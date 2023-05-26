@@ -56,6 +56,7 @@ class ModBot(discord.Client):
         self.mod_channels = {}  # Map from guild to the mod channel id for that guild
         self.reports = {}  # Map from user IDs to the state of their report
         self.reviews = {}  # Map from message IDs to the state of their report
+        self.banned_users = set()  # Set of banned user IDs
         self.mod_state = ModState.MOD_REPORT_INACTIVE
         self.malicious_reports = MaliciousReports()
 
@@ -146,7 +147,12 @@ class ModBot(discord.Client):
 
         # Only handle messages sent in the "group-#" channel
         if message.channel.name == f"group-{self.group_num}":
-            await self.handle_user_message(message)
+            # bans
+            if message.author.id in self.banned_users: 
+                await message.delete()
+                await message.channel.send("_Message from banned user has been deleted._")
+            else:
+                await self.handle_user_message(message)
         elif message.channel.name == f"group-{self.group_num}-mod":
             await next(iter(self.reviews.values())).handle_message(message)
 
@@ -164,7 +170,7 @@ class ModBot(discord.Client):
         message: discord.Message,
     ):
         self.reviews[message.id] = Review(
-            mod_channel, message, report, self.malicious_reports
+            mod_channel, message, report, self.malicious_reports, self.banned_users
         )
         await self.reviews[message.id].begin_mod_flow()
 
