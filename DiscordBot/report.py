@@ -11,6 +11,7 @@ class State(Enum):
     AWAITING_SUBSUBCATEGORY = auto()
     AWAITING_CONFIRMATION = auto()
     REPORT_COMPLETE = auto()
+    AWAITING_BLOCK_CONFIRMATION = auto()
 
 
 class Report:
@@ -50,6 +51,7 @@ class Report:
         self.message = None
         self.context = None
         self.category = self.subcategory = self.subsubcategory = None
+        self.imminent_danger = False
 
     async def handle_message(self, message):
         """
@@ -122,6 +124,7 @@ class Report:
             if (
                 self.category == "imminent danger"
             ):  # dif implementation because of nested subcategory
+                self.imminent_danger = True
                 return [
                     "You've selected "
                     + self.category
@@ -174,7 +177,22 @@ class Report:
         # modified - recieve confirmation
         if self.state == State.AWAITING_CONFIRMATION:
             if message.content.lower() == "confirm":
-                self.state = State.REPORT_COMPLETE
+                self.state = State.AWAITING_BLOCK_CONFIRMATION
+                if self.imminent_danger:
+                    return ["Report confirmed. Your selection: Category - "
+                    + self.category
+                    + ", Subcategory - "
+                    + self.subcategory
+                    + (
+                        ", Subsubcategory - " + self.subsubcategory
+                        if self.category == "imminent danger"
+                        and self.subcategory == "threats"
+                        else ""
+                    )
+                    + ". Thank you for reporting. Our content moderation team will review the message and decide on the appropriate action, which may be removal of the message, suspension of the account/user, or both."
+                    + " \n **We strongly advise you to contact 911 or your local authorities.**"
+                    + '\n\n**Action Item:** Would you like to block this user to prevent them for sending you messages in the future? Please respond "yes" or "no".'
+                    ]
                 return [
                     "Report confirmed. Your selection: Category - "
                     + self.category
@@ -186,13 +204,26 @@ class Report:
                         and self.subcategory == "threats"
                         else ""
                     )
-                    + ". Thank you for your report."
+                    + ". Thank you for reporting. Our content moderation team will review the message and decide on the appropriate action, which may be removal of the message, suspension of the account/user, or both."
+                    + '\n\n**Action Item:** Would you like to block this user to prevent them for sending you messages in the future? Please respond "yes" or "no".'
                 ]
             else:
                 return [
                     "Invalid response. Please confirm your selection by saying 'confirm' or restart by saying 'cancel'."
                 ]
+
+        if self.state == State.AWAITING_BLOCK_CONFIRMATION:
+            if message.content.lower() == "yes":
+                # TODO: add logic to block the user. This depends on your Discord API interaction.
+                self.state = State.REPORT_COMPLETE
+                return ["The user has been blocked. Thank you for your cooperation."]
+            elif message.content.lower() == "no":
+                self.state = State.REPORT_COMPLETE
+                return ["Okay, the user will not be blocked. Thank you for your report."]
+            else:
+                return ["Invalid response. Please reply 'block' to block the user or 'no' to not block."]
         return []
+
 
     def report_complete(self):
         return self.state == State.REPORT_COMPLETE
