@@ -24,22 +24,19 @@ class Review:
     def __init__(
         self,
         mod_channel: discord.TextChannel,
-        reporting_message: discord.Message,
+        reported_message: discord.Message,
         report: Report,
         malicious_reports: MaliciousReports,
-        banned_users
     ):
         self.state = ModState.MOD_REPORT_INACTIVE
-        self.reporting_message = reporting_message
-        self.reporting_author = reporting_message.author
+        self.reported_message = reported_message
+        self.reporting_author = reported_message.author
 
         self.mod_channel = mod_channel
-        self.reported_channel = report.message.channel
+        self.reported_channel = reported_message.channel
 
         self.report = report
         self.malicious_reports = malicious_reports
-
-        self.banned_users = banned_users
 
         self.began = False
 
@@ -64,16 +61,15 @@ class Review:
             and self.malicious_reports.userIDtoNumMalReports[self.reporting_author.id]
             > 1
         ):
-            await self.reported_channel.send(
+            await self.reported_channel.channel.send(
                 f"User {self.reporting_author.name}, your reporting feature has been suspended."
             )
             await self.mod_channel.send(
                 f"User with uid: {self.reporting_author.id} ({self.reporting_author.name}) has submitted a report, but their reporting feature is suspended due to a history of malicious reports."
             )
             return
-        
         fwd = await self.mod_channel.send(
-            f'Forwarded message:\n{self.report.message.author.name}, (UID = {self.report.message.author.id}) : "{self.report.message.content}"'
+            f'Forwarded message:\n{self.reporting_author.name}, (UID = {self.reporting_author.id}) : "{self.reported_message.content}"'
         )
         self.malicious_reports.reportMsgIDtoUserID[fwd.id] = self.reporting_author.id
         await fwd.add_reaction("⏫")
@@ -134,8 +130,6 @@ class Review:
                 await self.mod_channel.send(
                     "Report is sent to NCMEC and the reported account is permanently banned"
                 )
-                await self.report.message.delete()
-                self.banned_users.add(self.report.message.author.id)
                 return
             if message.content.lower() == "no":
                 self.state = ModState.MOD_REPORT_MALICIOUS
@@ -163,7 +157,7 @@ class Review:
                     await self.mod_channel.send(
                         f"The reporting feature has been suspended for user ID : {uid} for 7 days."
                     )
-                    await self.reported_channel.send(
+                    await self.reported_channel.channel.send(
                         f"User {self.reporting_author.name}: Your ability to report messages has been suspended for 7 days."
                     )
                 return
@@ -205,16 +199,12 @@ class Review:
                 await self.mod_channel.send(
                     "The perpetrator has been warned and permanently banned."
                 )
-                await self.report.message.delete()
-                self.banned_users.add(self.report.message.author.id)
                 return
             if message.content.lower() == "no":
                 self.state = ModState.MOD_REPORT_INACTIVE
                 await self.mod_channel.send(
                     "The perpetrator has been warned and banned for 7 days."
                 )
-                await self.report.message.delete()
-                self.banned_users.add(self.report.message.author.id)
                 return
         if self.state == ModState.MOD_REPORT_OTHER_CATEGORIES:
             if message.content.lower() == "yes":
@@ -235,16 +225,12 @@ class Review:
                 await self.mod_channel.send(
                     "The perpetrator has been warned, and their account has been banned for 7 days."
                 )
-                await self.report.message.delete()
-                self.banned_users.add(self.report.message.author.id)
                 return
             if message.content.lower() == "high":
                 self.state = ModState.MOD_REPORT_INACTIVE
                 await self.mod_channel.send(
                     "The perpetrator has been warned, and their account has been banned permanently."
                 )
-                await self.report.message.delete()
-                self.banned_users.add(self.report.message.author.id)
                 return
         if self.state == ModState.MOD_REPORT_CONSENSUAL:
             if message.content.lower() == "yes":
@@ -258,6 +244,4 @@ class Review:
                 await self.mod_channel.send(
                     "The perpetrator has been warned on the basis of violating our content policy and permanently banned. The user has been given the option to have the image(s) added to the hash database."
                 )
-                await self.report.message.delete()
-                self.banned_users.add(self.report.message.author.id)
                 return
