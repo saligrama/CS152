@@ -109,7 +109,7 @@ class Report:
                 "I found this message:",
                 "```" + message.author.name + ": " + message.content + "```",
                 "Please specify the category of the issue: "
-                + ", ".join(self.CATEGORIES.keys()),
+                + "     \n".join(self.CATEGORIES.keys()),
             ]
 
         # added - recieve top category
@@ -118,7 +118,7 @@ class Report:
             if self.category not in self.CATEGORIES:
                 return [
                     "Invalid category. Please specify one of the following: "
-                    + ", ".join(self.CATEGORIES.keys())
+                    + "     \n".join(self.CATEGORIES.keys())
                 ]
             self.state = State.AWAITING_SUBCATEGORY
             if (
@@ -129,14 +129,14 @@ class Report:
                     "You've selected "
                     + self.category
                     + ". Please specify the subcategory: "
-                    + ", ".join(self.CATEGORIES[self.category].keys())
+                    + "     \n".join(self.CATEGORIES[self.category].keys())
                 ]
             else:
                 return [
                     "You've selected "
                     + self.category
                     + ". Please specify the subcategory: "
-                    + ", ".join(self.CATEGORIES[self.category])
+                    + "     \n".join(self.CATEGORIES[self.category])
                 ]
 
         # added - recieve subcategory
@@ -148,7 +148,7 @@ class Report:
                     "You've selected "
                     + self.subcategory
                     + ". Please specify the subcategory of 'Threats': "
-                    + ", ".join(self.CATEGORIES[self.category][self.subcategory])
+                    + "     \n".join(self.CATEGORIES[self.category][self.subcategory])
                 ]
             else:
                 self.state = State.AWAITING_CONFIRMATION
@@ -165,7 +165,7 @@ class Report:
             ):
                 return [
                     "Invalid subsubcategory. Please specify one of the following: "
-                    + ", ".join(self.CATEGORIES[self.category][self.subcategory])
+                    + "     \n".join(self.CATEGORIES[self.category][self.subcategory])
                 ]
             self.state = State.AWAITING_CONFIRMATION
             return [
