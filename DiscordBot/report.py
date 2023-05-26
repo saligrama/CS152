@@ -108,7 +108,7 @@ class Report:
             return [
                 "I found this message:",
                 "```" + message.author.name + ": " + message.content + "```",
-                "Please specify the category of the issue: "
+                "Please specify the category of the issue: \n"
                 + "     \n".join(self.CATEGORIES.keys()),
             ]
 
@@ -117,7 +117,7 @@ class Report:
             self.category = message.content.lower()
             if self.category not in self.CATEGORIES:
                 return [
-                    "Invalid category. Please specify one of the following: "
+                    "Invalid category. Please specify one of the following: \n"
                     + "     \n".join(self.CATEGORIES.keys())
                 ]
             self.state = State.AWAITING_SUBCATEGORY
@@ -128,14 +128,14 @@ class Report:
                 return [
                     "You've selected "
                     + self.category
-                    + ". Please specify the subcategory: "
+                    + ". Please specify the subcategory: \n"
                     + "     \n".join(self.CATEGORIES[self.category].keys())
                 ]
             else:
                 return [
                     "You've selected "
                     + self.category
-                    + ". Please specify the subcategory: "
+                    + ". Please specify the subcategory: \n"
                     + "     \n".join(self.CATEGORIES[self.category])
                 ]
 
@@ -147,7 +147,7 @@ class Report:
                 return [
                     "You've selected "
                     + self.subcategory
-                    + ". Please specify the subcategory of 'Threats': "
+                    + ". Please specify the subcategory of 'Threats': \n"
                     + "     \n".join(self.CATEGORIES[self.category][self.subcategory])
                 ]
             else:
@@ -164,7 +164,7 @@ class Report:
                 not in self.CATEGORIES[self.category][self.subcategory]
             ):
                 return [
-                    "Invalid subsubcategory. Please specify one of the following: "
+                    "Invalid subsubcategory. Please specify one of the following: \n"
                     + "     \n".join(self.CATEGORIES[self.category][self.subcategory])
                 ]
             self.state = State.AWAITING_CONFIRMATION
