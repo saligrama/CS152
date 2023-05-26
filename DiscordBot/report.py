@@ -1,3 +1,4 @@
+from enum import Enum, auto
 import discord
 import re
 class State(Enum):
@@ -73,10 +74,29 @@ class Report:
             # Parse out the three ID strings from the message link
             m = re.search("/(\d+)/(\d+)/(\d+)", message.content)
             if not m:
+                return ["I'm sorry, I couldn't read that link. Please try again or say `cancel` to cancel."
+                ]
+            guild = self.client.get_guild(int(m.group(1)))
+            if not guild:
                 return [
-Expand Down
-Expand Up
-	@@ -142,39 +104,99 @@ async def on_message(self, message):
+                    "I cannot accept reports of messages from guilds that I'm not in. Please have the guild owner add me to the guild and try again."
+                ]
+            channel = guild.get_channel(int(m.group(2)))
+            if not channel:
+                return [
+                    "It seems this channel was deleted or never existed. Please try again or say `cancel` to cancel."
+                ]
+            try:
+                message = await channel.fetch_message(int(m.group(3)))
+            except discord.errors.NotFound:
+                return [
+                    "It seems this message was deleted or never existed. Please try again or say `cancel` to cancel."
+                ]
+            self.message = message
+            self.context = [
+                message async for message in channel.history(around=message, limit=7)
+            ]
+            self.context.sort(key=lambda m: m.created_at)
             # Here we've found the message - it's up to you to decide what to do next!
             self.state = State.MESSAGE_IDENTIFIED
 
