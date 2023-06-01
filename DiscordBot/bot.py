@@ -112,7 +112,9 @@ class ModBot(discord.Client):
         else:
             await self.handle_dm(message)
     async def handle_automatic_detection(self, message:discord.Message):
-        # this handles what AUTOMATIC thresholding is 
+        # this handles what AUTOMATIC thresholding is
+        # TODO set reporter appropriately to bot, so it's clear to moderator that this is a system autoflag
+        # TODO policy decision? do any of these get auto deleted?
         results = evaluator.eval_all(message)
 
         if results.openai_threatening_status == "Threatening":
@@ -121,6 +123,20 @@ class ModBot(discord.Client):
             rp.state = rp.report_complete
             rp.category = "imminent danger"
             rp.subcategory = "threats"
+            rp.message = message
+            rp.context = [
+                message async for message in message.channel.history(around=message, limit=7)
+            ]
+            rp.context.sort(key=lambda m: m.created_at)
+            await self.do_mod_flow(
+                mod_channel, rp, self.user.id, message
+            )
+        elif results.pdq_max_similarity > 0.9:
+            mod_channel = self.mod_channels[message.guild.id]
+            rp = Report(self)
+            rp.state = rp.report_complete
+            rp.category = "offensive content"
+            rp.subcategory = "non-consensual sharing of, or threats to share, intimate imagery"
             rp.message = message
             rp.context = [
                 message async for message in message.channel.history(around=message, limit=7)
