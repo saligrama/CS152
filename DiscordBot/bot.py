@@ -6,12 +6,12 @@ import json
 import logging
 import re
 import requests
+import evaluator
 from report import Report
 from review import Review
 from malicious_reports import MaliciousReports
 import pdb
 from enum import Enum, auto
-import openai
 
 
 class ModState(Enum):
@@ -36,8 +36,6 @@ handler.setFormatter(
     logging.Formatter("%(asctime)s:%(levelname)s:%(name)s: %(message)s")
 )
 logger.addHandler(handler)
-
-# There should be a file called 'tokens.json' inside the same folder as this file
 token_path = "tokens.json"
 if not os.path.isfile(token_path):
     raise Exception(f"{token_path} not found!")
@@ -45,8 +43,8 @@ with open(token_path) as f:
     # If you get an error here, it means your token is formatted incorrectly. Did you put it in quotes?
     tokens = json.load(f)
     discord_token = tokens["discord"]
-    openai.organization = tokens["openai"]["organization"]
-    openai.api_key = tokens["openai"]["api_key"]
+    evaluator.openai.organization = tokens["openai"]["organization"]
+    evaluator.openai.api_key = tokens["openai"]["api_key"]
 
 
 class ModBot(discord.Client):
@@ -113,12 +111,15 @@ class ModBot(discord.Client):
             await self.handle_channel_message(message)
         else:
             await self.handle_dm(message)
-    async def handle_automatic_detection(self, message:discord.Message): 
-        if self.openai_eval(message.content) == "Threatening":
+    async def handle_automatic_detection(self, message:discord.Message):
+        # this handles what AUTOMATIC thresholding is 
+        results = evaluator.eval_all(message)
+
+        if results.openai_threatening_status == "Threatening":
             mod_channel = self.mod_channels[message.guild.id]
             rp = Report(self)
             rp.state = rp.report_complete
-            rp.category = "imminant danger"
+            rp.category = "imminent danger"
             rp.subcategory = "threats"
             rp.message = message
             rp.context = [
@@ -198,41 +199,6 @@ class ModBot(discord.Client):
             mod_channel, message, report, self.malicious_reports, self.banned_users
         )
         await self.reviews[message.id].begin_mod_flow()
-
-    def eval_text(self, message):
-        """'
-        TODO: Once you know how you want to evaluate messages in your channel,
-        insert your code here! This will primarily be used in Milestone 3.
-        """
-        return message
-
-    def code_format(self, text):
-        """'
-        TODO: Once you know how you want to show that a message has been
-        evaluated, insert your code here for formatting the string to be
-        shown in the mod channel.
-        """
-        return "Evaluated: '" + text + "'"
-    
-    def openai_eval(self, text): 
-        response = openai.ChatCompletion.create(
-        model="gpt-4",
-        messages=[
-        {"role": "system", "content": "You are a content moderation system. Classify each input as either threatening or not-threatening."},
-        {"role": "user", "content": "I am going to kill you."},
-        {"role": "assistant", "content": "Threatening"},
-        {"role": "user", "content": "I love you"},
-        {"role": "assistant", "content": "Not-threatening"},
-        {"role": "user", "content": "You should kill yourself"},
-        {"role": "assistant", "content": "Threatening"},
-        {"role": "user", "content": text},
-
-        ]
-        )
-        output = response['choices'][0]['message']['content']
-
-        return output
-
 
 client = ModBot()
 client.run(discord_token)

@@ -1,6 +1,7 @@
 from enum import Enum, auto
 import discord
 import re
+import evaluator
 
 from report import Report
 from malicious_reports import MaliciousReports
@@ -95,8 +96,9 @@ class Review:
             f"Reported for: ({self.report.category}, {self.report.subcategory}, {self.report.subsubcategory})"
         )
 
-        # scores = self.eval_text(self.report.message.content)
-        # await self.mod_channel.send(self.code_format(scores))
+        scores = evaluator.eval_all(self.report.message)
+        await self.mod_channel.send(scores.prettyprint())
+
         await self.mod_channel.send(
             "At any point during the report handling process, please react with ⏫ to the forwarded message to escalate to higher level reviewers in case of ambiguity."
         )
