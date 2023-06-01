@@ -11,6 +11,7 @@ from review import Review
 from malicious_reports import MaliciousReports
 import pdb
 from enum import Enum, auto
+import openai
 
 
 class ModState(Enum):
@@ -44,6 +45,8 @@ with open(token_path) as f:
     # If you get an error here, it means your token is formatted incorrectly. Did you put it in quotes?
     tokens = json.load(f)
     discord_token = tokens["discord"]
+    openai.organization = tokens["openai"]["organization"]
+    openai.api_key = tokens["openai"]["api_key"]
 
 
 class ModBot(discord.Client):
@@ -99,11 +102,32 @@ class ModBot(discord.Client):
         if message.author.id == self.user.id:
             return
 
+
+        if not message.guild: 
+            return
+        # the automatic detection pipeline function to be implemented
+        await self.handle_automatic_detection(message)
+        
         # Check if this message was sent in a server ("guild") or if it's a DM
         if message.guild:
             await self.handle_channel_message(message)
         else:
             await self.handle_dm(message)
+    async def handle_automatic_detection(self, message:discord.Message): 
+        if self.openai_eval(message.content) == "Threatening":
+            mod_channel = self.mod_channels[message.guild.id]
+            rp = Report(self)
+            rp.state = rp.report_complete
+            rp.category = "imminant danger"
+            rp.subcategory = "threats"
+            rp.message = message
+            rp.context = [
+                message async for message in message.channel.history(around=message, limit=7)
+            ]
+            rp.context.sort(key=lambda m: m.created_at)
+            await self.do_mod_flow(
+                mod_channel, rp, self.user.id, message
+            )
 
     async def handle_user_message(self, message: discord.Message):
         # Handle a help message
@@ -112,6 +136,7 @@ class ModBot(discord.Client):
             reply += "Use the `cancel` command to cancel the report process.\n"
             await message.channel.send(reply)
             return
+        
 
         author_id = message.author.id
         responses = []
@@ -188,6 +213,25 @@ class ModBot(discord.Client):
         shown in the mod channel.
         """
         return "Evaluated: '" + text + "'"
+    
+    def openai_eval(self, text): 
+        response = openai.ChatCompletion.create(
+        model="gpt-4",
+        messages=[
+        {"role": "system", "content": "You are a content moderation system. Classify each input as either threatening or not-threatening."},
+        {"role": "user", "content": "I am going to kill you."},
+        {"role": "assistant", "content": "Threatening"},
+        {"role": "user", "content": "I love you"},
+        {"role": "assistant", "content": "Not-threatening"},
+        {"role": "user", "content": "You should kill yourself"},
+        {"role": "assistant", "content": "Threatening"},
+        {"role": "user", "content": text},
+
+        ]
+        )
+        output = response['choices'][0]['message']['content']
+
+        return output
 
 
 client = ModBot()
