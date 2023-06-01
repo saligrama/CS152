@@ -2,3 +2,5 @@ discord
 requests
 pdqhash
 openai
+opencv-python-headless
+numpy
