@@ -34,6 +34,10 @@ class OpenaiAction(Enum):
     ACTION_FLAG = auto()
     ACTION_NONE = auto()
 
+    def __str__(self):
+        pre = self.name.lower().split("_")[1:]
+        return " and ".join(pre)
+
 
 @dataclass
 class EvaluationResult:
