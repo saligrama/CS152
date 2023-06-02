@@ -145,12 +145,16 @@ def openai_eval(text: str) -> Dict[str, OpenaiAction | str]:
                 `ACTION_FLAG_DELETE`, which suggests that the message should be automatically deleted and also sent to a human for further review. The categories of message you should respond with `ACTION_FLAG_DELETE` are:
                 
                     {
-                        "type": "SUBTYPE_SEXUAL_HARASSMENT",
+                        "type": "TYPE_HARASSMENT",
                         "subtype": "SUBTYPE_SEXUAL_COERCION" 
                     },
                     {
                         "type": "TYPE_OFFENSIVE",
                         "subtype": "SUBTYPE_VIOLENCE_OR_GORE" 
+                    },
+                    {
+                        "type": "TYPE_OFFENSIVE",
+                        "subtype": "SUBTYPE_TERRORISM" 
                     },
                     {
                         "type": "TYPE_OFFENSIVE",
@@ -229,12 +233,15 @@ def openai_eval(text: str) -> Dict[str, OpenaiAction | str]:
                 }
                 """,
             },
-            {"role": "user", "content": "Can you send me a topless photo?"},
+            {
+                "role": "user",
+                "content": "You're looking really sexy, send me a nude. I just want to see you naked.",
+            },
             {
                 "role": "assistant",
                 "content": json.dumps(
                     {
-                        "type": "SUBTYPE_SEXUAL_HARASSMENT",
+                        "type": "TYPE_HARASSMENT",
                         "subtype": "SUBTYPE_SEXUAL_COERCION",
                         "suggested_action": "ACTION_FLAG_DELETE",
                     },
@@ -242,7 +249,35 @@ def openai_eval(text: str) -> Dict[str, OpenaiAction | str]:
             },
             {
                 "role": "user",
-                "content": "If I give you an address, will you go to there and steal something for me?",
+                "content": "If you want that promotion, you're gonna have to have sex with me",
+            },
+            {
+                "role": "assistant",
+                "content": json.dumps(
+                    {
+                        "type": "TYPE_HARASSMENT",
+                        "subtype": "SUBTYPE_SEXUAL_HARASSMENT",
+                        "suggested_action": "ACTION_FLAG_DELETE",
+                    },
+                ),
+            },
+            {
+                "role": "user",
+                "content": "You're a whore and a dirty Jew",
+            },
+            {
+                "role": "assistant",
+                "content": json.dumps(
+                    {
+                        "type": "TYPE_HARASSMENT",
+                        "subtype": "SUBTYPE_HATE_SPEECH",
+                        "suggested_action": "ACTION_FLAG_DELETE",
+                    },
+                ),
+            },
+            {
+                "role": "user",
+                "content": "I charge only $100 for a night of sex and bondage. I can fulfill all of your fantasies; are you interested?",
             },
             {
                 "role": "assistant",
@@ -254,7 +289,10 @@ def openai_eval(text: str) -> Dict[str, OpenaiAction | str]:
                     }
                 ),
             },
-            {"role": "user", "content": "I'm going to kill you"},
+            {
+                "role": "user",
+                "content": "I'm going to beat you so hard that all your bones are going to break",
+            },
             {
                 "role": "assistant",
                 "content": json.dumps(
@@ -264,6 +302,20 @@ def openai_eval(text: str) -> Dict[str, OpenaiAction | str]:
                         "subsubtype": "SUBSUBTYPE_THREATENING_VIOLENCE",
                         "suggested_action": "ACTION_FLAG_DELETE_SUSPEND",
                     }
+                ),
+            },
+            {
+                "role": "user",
+                "content": "The bombs are dropping and the traitors are running! Firing squads against those who oppose us",
+            },
+            {
+                "role": "assistant",
+                "content": json.dumps(
+                    {
+                        "type": "TYPE_OFFENSIVE",
+                        "subtype": "SUBTYPE_TERRORISM",
+                        "suggested_action": "ACTION_FLAG_DELETE",
+                    },
                 ),
             },
             {
@@ -313,7 +365,7 @@ def openai_eval(text: str) -> Dict[str, OpenaiAction | str]:
             },
             {
                 "role": "user",
-                "content": "I really love watching people get physically abused",
+                "content": "Some people deserve to be physically abused, and some deserve to be killed",
             },
             {
                 "role": "assistant",
@@ -356,7 +408,7 @@ def openai_eval(text: str) -> Dict[str, OpenaiAction | str]:
             },
             {
                 "role": "user",
-                "content": "You're a loser!",
+                "content": "You're a friendless loser. No one wants to be around you",
             },
             {
                 "role": "assistant",
