@@ -381,20 +381,11 @@ def openai_eval(text: str) -> Dict[str, OpenaiAction | str]:
             gpt_classification["suggested_action"]
         ]
 
-        if "type" in gpt_classification.keys():
-            gpt_classification["type"] = " ".join(
-                gpt_classification["type"].lower().split("_")[1:]
-            )
-
-        if "subtype" in gpt_classification.keys():
-            gpt_classification["subtype"] = " ".join(
-                gpt_classification["subtype"].lower().split("_")[1:]
-            )
-
-        if "subsubtype" in gpt_classification.keys():
-            gpt_classification["subsubtype"] = " ".join(
-                gpt_classification["subsubtype"].lower().split("_")[1:]
-            )
+        for cls_type in ["type", "subtype", "subsubtype"]:
+            if cls_type in gpt_classification.keys():
+                gpt_classification[cls_type] = " ".join(
+                    gpt_classification[cls_type].lower().split("_")[1:]
+                )
 
         return gpt_classification
     except ValueError:
