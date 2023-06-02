@@ -47,7 +47,7 @@ class Report:
         },
     }
 
-    def __init__(self, client):
+    def __init__(self, client: discord.Client):
         self.state = State.REPORT_START
         self.client = client
         self.message = None
@@ -55,7 +55,7 @@ class Report:
         self.category = self.subcategory = self.subsubcategory = None
         self.imminent_danger = False
 
-    async def handle_message(self, message):
+    async def handle_message(self, message: discord.Message):
         """
         This function makes up the meat of the user-side reporting flow. It defines how we transition between states and what
         prompts to offer at each of those states. You're welcome to change anything you want; this skeleton is just here to
