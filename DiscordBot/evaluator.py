@@ -2,6 +2,7 @@ from dataclasses import dataclass
 import json
 from typing import Optional, Dict
 from enum import Enum, auto
+from textwrap import dedent
 import discord
 import openai
 import requests
@@ -45,10 +46,13 @@ class EvaluationResult:
     pdq_max_similarity: float
 
     def pretty_print(self) -> str:
-        return f"""
-        OpenAI suggested action: {self.openai_result["suggested_action"]}
-        
-        PDQ max similarity (known NCII): {self.pdq_max_similarity}"""
+        return dedent(
+            f"""\
+            OpenAI suggested action: {self.openai_result["suggested_action"]}
+
+            PDQ max similarity (known NCII): {self.pdq_max_similarity}\
+            """
+        )
 
 
 def eval_all(message: discord.Message) -> EvaluationResult:

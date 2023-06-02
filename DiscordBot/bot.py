@@ -1,4 +1,5 @@
 # bot.py
+from typing import Optional
 import discord
 from discord.ext import commands
 import os
@@ -134,7 +135,7 @@ class ModBot(discord.Client):
                 async for message in message.channel.history(around=message, limit=7)
             ]
             rp.context.sort(key=lambda m: m.created_at)
-            await self.do_mod_flow(mod_channel, rp, self.user.id, message)
+            await self.do_mod_flow(mod_channel, rp, message, results)
         elif results.pdq_max_similarity > 0.9:
             mod_channel = self.mod_channels[message.guild.id]
             rp = Report(self)
@@ -149,7 +150,7 @@ class ModBot(discord.Client):
                 async for message in message.channel.history(around=message, limit=7)
             ]
             rp.context.sort(key=lambda m: m.created_at)
-            await self.do_mod_flow(mod_channel, rp, self.user.id, message)
+            await self.do_mod_flow(mod_channel, rp, message, results)
 
     async def handle_user_message(self, message: discord.Message):
         # Handle a help message
@@ -180,9 +181,7 @@ class ModBot(discord.Client):
         # If the report is complete or cancelled, remove it from our map
         if self.reports[author_id].report_complete():
             mod_channel = self.mod_channels[self.reports[author_id].message.guild.id]
-            await self.do_mod_flow(
-                mod_channel, self.reports[author_id], author_id, message
-            )
+            await self.do_mod_flow(mod_channel, self.reports[author_id], message, None)
             self.reports.pop(author_id)
 
     async def handle_dm(self, message: discord.Message):
@@ -214,11 +213,16 @@ class ModBot(discord.Client):
         self,
         mod_channel: discord.TextChannel,
         report: Report,
-        author_id: int,
         message: discord.Message,
+        openai_result: Optional[evaluator.EvaluationResult] = None,
     ):
         self.reviews[message.id] = Review(
-            mod_channel, message, report, self.malicious_reports, self.banned_users
+            mod_channel,
+            message,
+            report,
+            self.malicious_reports,
+            self.banned_users,
+            openai_result=openai_result,
         )
         await self.reviews[message.id].begin_mod_flow()
 

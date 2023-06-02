@@ -1,4 +1,5 @@
 from enum import Enum, auto
+from typing import Optional
 import discord
 import re
 import evaluator
@@ -29,6 +30,7 @@ class Review:
         report: Report,
         malicious_reports: MaliciousReports,
         banned_users,
+        openai_result: Optional[evaluator.EvaluationResult] = None,
     ):
         self.state = ModState.MOD_REPORT_INACTIVE
         self.reporting_message = reporting_message
@@ -43,6 +45,8 @@ class Review:
         self.banned_users = banned_users
 
         self.began = False
+
+        self.openai_result = openai_result
 
     def handle_emoji(message: discord.Message, emoji):
         return
@@ -96,8 +100,9 @@ class Review:
             f"Reported for: ({self.report.category}, {self.report.subcategory}, {self.report.subsubcategory})"
         )
 
-        scores = evaluator.eval_all(self.report.message)
-        await self.mod_channel.send(scores.pretty_print())
+        if not self.openai_result:
+            self.openai_result = evaluator.eval_all(self.report.message)
+        await self.mod_channel.send(self.openai_result.pretty_print())
 
         await self.mod_channel.send(
             "At any point during the report handling process, please react with ⏫ to the forwarded message to escalate to higher level reviewers in case of ambiguity."
