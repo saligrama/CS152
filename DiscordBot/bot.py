@@ -100,18 +100,18 @@ class ModBot(discord.Client):
         if message.author.id == self.user.id:
             return
 
-
-        if not message.guild: 
+        if not message.guild:
             return
         # the automatic detection pipeline function to be implemented
         await self.handle_automatic_detection(message)
-        
+
         # Check if this message was sent in a server ("guild") or if it's a DM
         if message.guild:
             await self.handle_channel_message(message)
         else:
             await self.handle_dm(message)
-    async def handle_automatic_detection(self, message:discord.Message):
+
+    async def handle_automatic_detection(self, message: discord.Message):
         # this handles what AUTOMATIC thresholding is
         # TODO set reporter appropriately to bot, so it's clear to moderator that this is a system autoflag
         # TODO policy decision? do any of these get auto deleted?
@@ -125,26 +125,26 @@ class ModBot(discord.Client):
             rp.subcategory = "threats"
             rp.message = message
             rp.context = [
-                message async for message in message.channel.history(around=message, limit=7)
+                message
+                async for message in message.channel.history(around=message, limit=7)
             ]
             rp.context.sort(key=lambda m: m.created_at)
-            await self.do_mod_flow(
-                mod_channel, rp, self.user.id, message
-            )
+            await self.do_mod_flow(mod_channel, rp, self.user.id, message)
         elif results.pdq_max_similarity > 0.9:
             mod_channel = self.mod_channels[message.guild.id]
             rp = Report(self)
             rp.state = rp.report_complete
             rp.category = "offensive content"
-            rp.subcategory = "non-consensual sharing of, or threats to share, intimate imagery"
+            rp.subcategory = (
+                "non-consensual sharing of, or threats to share, intimate imagery"
+            )
             rp.message = message
             rp.context = [
-                message async for message in message.channel.history(around=message, limit=7)
+                message
+                async for message in message.channel.history(around=message, limit=7)
             ]
             rp.context.sort(key=lambda m: m.created_at)
-            await self.do_mod_flow(
-                mod_channel, rp, self.user.id, message
-            )
+            await self.do_mod_flow(mod_channel, rp, self.user.id, message)
 
     async def handle_user_message(self, message: discord.Message):
         # Handle a help message
@@ -153,7 +153,6 @@ class ModBot(discord.Client):
             reply += "Use the `cancel` command to cancel the report process.\n"
             await message.channel.send(reply)
             return
-        
 
         author_id = message.author.id
         responses = []
@@ -190,9 +189,11 @@ class ModBot(discord.Client):
         # Only handle messages sent in the "group-#" channel
         if message.channel.name == f"group-{self.group_num}":
             # bans
-            if message.author.id in self.banned_users: 
+            if message.author.id in self.banned_users:
                 await message.delete()
-                await message.channel.send("_Message from banned user has been deleted._")
+                await message.channel.send(
+                    "_Message from banned user has been deleted._"
+                )
             else:
                 await self.handle_user_message(message)
         elif message.channel.name == f"group-{self.group_num}-mod":
@@ -215,6 +216,7 @@ class ModBot(discord.Client):
             mod_channel, message, report, self.malicious_reports, self.banned_users
         )
         await self.reviews[message.id].begin_mod_flow()
+
 
 client = ModBot()
 client.run(discord_token)
