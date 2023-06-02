@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Optional
+from enum import Enum, auto
 import discord
 import openai
 import requests
@@ -25,18 +26,28 @@ PDQ_BLACKLIST = [
 ]
 
 
+class OpenaiAction(Enum):
+    ACTION_FLAG_DELETE = auto()
+    ACTION_FLAG_DELETE_SUSPEND = auto()
+    ACTION_DELETE = auto()
+    ACTION_FLAG = auto()
+    ACTION_NONE = auto()
+
+
 @dataclass
 class EvaluationResult:
-    openai_threatening_status: str
+    openai_suggested_action: OpenaiAction
     pdq_max_similarity: float
 
-    def prettyprint(self) -> str:
-        return f"Threatening status: {self.openai_threatening_status}\nPDQ max similarity (known NCII): {self.pdq_max_similarity}\n"
+    def pretty_print(self) -> str:
+        return f"""OpenAI suggested action: {self.openai_suggested_action}
+        
+        PDQ max similarity (known NCII): {self.pdq_max_similarity}"""
 
 
 def eval_all(message: discord.Message) -> EvaluationResult:
     return EvaluationResult(
-        openai_threatening_status=openai_eval_threatening(message.content),
+        openai_suggested_action=openai_eval_threatening(message.content),
         pdq_max_similarity=pdq_eval_max_similarity(message),
     )
 
@@ -84,23 +95,77 @@ def pdq_eval_max_similarity(message: discord.Message) -> Optional[float]:
     return max_sim
 
 
-def openai_eval_threatening(text):
+def openai_eval_threatening(text: str) -> OpenaiAction:
     response = openai.ChatCompletion.create(
         model="gpt-4",
         messages=[
             {
                 "role": "system",
-                "content": "You are a content moderation system. Classify each input as either threatening or not-threatening.",
+                "content": """You are a content moderation system. You will be given a message that should be evaluated based on how harmful it is to a user that sees it. Your suggestions will be used to potentially delete the message, suspend or ban the message's author, or pass the message along to a human for further review.
+
+                When given a message, please respond with exactly one of the following responses and no other text:
+
+                `ACTION_FLAG_DELETE`, which suggests that the message should be automatically deleted and also sent to a human for further review. The categories of message you should respond with `ACTION_FLAG_DELETE` are: “Violence and Gore”, “Coercing Sexual Favors or Content”, “Solicitation”, “Unwanted Sexual Content”, “Hate Speech”.
+
+                `ACTION_FLAG_DELETE_SUSPEND`, which suggests that the message should be automatically deleted, its author be suspended, and also sent to a human for further review. The categories of message you should respond with `ACTION_FLAG_DELETE` are:  “Threatening Violence”, “Threats to Share Intimate Imagery”, “Self Harm and Suicide”, “Non-Consensual Intimate Imagery”, “Child Sex Abuse Content”, “Sexual Harassment”, “Publicizing Private Information”, “Sexual Harassment”, “Publicizing Private Information”, “Glorifying Violence”.
+
+                `ACTION_DELETE`, which suggests that the message should be automatically deleted, but it won't be flagged for human review. The categories of message you should respond with `ACTION_DELETE` are: “Fraud”, “Impersonation”.
+
+                `ACTION_FLAG`, which suggests that the message should be sent to a human review. Use this option if you are unsure about what action to take on the message.
+
+                `ACTION_NONE`, which suggests that the message is not in violation of any conduct guidelines.
+
+                Here are some examples of suggested responses. If you don't think a message fits into one of the categories provided above (i.e., it doesn't look anything like the examples provided below), respond by default with `ACTION_NONE`.""",
             },
-            {"role": "user", "content": "I am going to kill you."},
-            {"role": "assistant", "content": "Threatening"},
-            {"role": "user", "content": "I love you"},
-            {"role": "assistant", "content": "Not-threatening"},
-            {"role": "user", "content": "You should kill yourself"},
-            {"role": "assistant", "content": "Threatening"},
+            {"role": "user", "content": "Can you send me a topless photo?"},
+            {"role": "assistant", "content": "ACTION_FLAG_DELETE"},
+            {
+                "role": "user",
+                "content": "If I give you an address, will you go to there and steal something for me?",
+            },
+            {"role": "assistant", "content": "ACTION_FLAG_DELETE"},
+            {"role": "user", "content": "I'm going to kill you"},
+            {"role": "assistant", "content": "ACTION_FLAG_DELETE_SUSPEND"},
+            {
+                "role": "user",
+                "content": "I have that nude photo of you and I'm going to post it for the world to see",
+            },
+            {"role": "assistant", "content": "ACTION_FLAG_DELETE_SUSPEND"},
+            {
+                "role": "user",
+                "content": "I have nobody left to turn to and I'm going to slit my wrists",
+            },
+            {"role": "assistant", "content": "ACTION_FLAG_DELETE_SUSPEND"},
+            {
+                "role": "user",
+                "content": "Melissa's social security number is 178-45-5967",
+            },
+            {"role": "assistant", "content": "ACTION_FLAG_DELETE_SUSPEND"},
+            {
+                "role": "user",
+                "content": "I really love watching people get physically abused",
+            },
+            {"role": "assistant", "content": "ACTION_FLAG_DELETE_SUSPEND"},
+            {
+                "role": "user",
+                "content": "Send $3,000 to this account and get tickets to meet Beyonce!",
+            },
+            {"role": "assistant", "content": "ACTION_DELETE"},
+            {
+                "role": "user",
+                "content": "This is Elon Musk! Congratulations! You just won a Tesla Model X!",
+            },
+            {"role": "assistant", "content": "ACTION_DELETE"},
+            {
+                "role": "user",
+                "content": "You're a loser!",
+            },
+            {"role": "assistant", "content": "ACTION_DELETE"},
             {"role": "user", "content": text},
         ],
     )
-    output = response["choices"][0]["message"]["content"]
 
-    return output
+    try:
+        return OpenaiAction[response["choices"][0]["message"]["content"]]
+    except ValueError:
+        return OpenaiAction.ACTION_NONE

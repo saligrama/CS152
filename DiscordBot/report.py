@@ -45,6 +45,7 @@ class Report:
                 "non-consensual sharing of, or threats to share, intimate imagery",
             ],
         },
+        "misc": ["misc"],  # TODO testing, remove
     }
 
     def __init__(self, client: discord.Client):

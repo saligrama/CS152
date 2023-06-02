@@ -117,12 +117,12 @@ class ModBot(discord.Client):
         # TODO policy decision? do any of these get auto deleted?
         results = evaluator.eval_all(message)
 
-        if results.openai_threatening_status == "Threatening":
+        if results.openai_suggested_action != evaluator.OpenaiAction.ACTION_NONE:
             mod_channel = self.mod_channels[message.guild.id]
             rp = Report(self)
             rp.state = rp.report_complete
-            rp.category = "imminent danger"
-            rp.subcategory = "threats"
+            rp.category = "misc"
+            rp.subcategory = "misc"
             rp.message = message
             rp.context = [
                 message
