@@ -1,6 +1,8 @@
 from enum import Enum, auto
 import discord
 import re
+
+
 class State(Enum):
     REPORT_START = auto()
     AWAITING_MESSAGE = auto()
@@ -76,7 +78,8 @@ class Report:
             # Parse out the three ID strings from the message link
             m = re.search("/(\d+)/(\d+)/(\d+)", message.content)
             if not m:
-                return ["I'm sorry, I couldn't read that link. Please try again or say `cancel` to cancel."
+                return [
+                    "I'm sorry, I couldn't read that link. Please try again or say `cancel` to cancel."
                 ]
             guild = self.client.get_guild(int(m.group(1)))
             if not guild:
@@ -179,19 +182,20 @@ class Report:
             if message.content.lower() == "confirm":
                 self.state = State.AWAITING_BLOCK_CONFIRMATION
                 if self.imminent_danger:
-                    return ["Report confirmed. Your selection: Category - "
-                    + self.category
-                    + ", Subcategory - "
-                    + self.subcategory
-                    + (
-                        ", Subsubcategory - " + self.subsubcategory
-                        if self.category == "imminent danger"
-                        and self.subcategory == "threats"
-                        else ""
-                    )
-                    + ". Thank you for reporting. Our content moderation team will review the message and decide on the appropriate action, which may be removal of the message, suspension of the account/user, or both."
-                    + " \n **We strongly advise you to contact 911 or your local authorities.**"
-                    + '\n\n**Action Item:** Would you like to block this user to prevent them for sending you messages in the future? Please respond "yes" or "no".'
+                    return [
+                        "Report confirmed. Your selection: Category - "
+                        + self.category
+                        + ", Subcategory - "
+                        + self.subcategory
+                        + (
+                            ", Subsubcategory - " + self.subsubcategory
+                            if self.category == "imminent danger"
+                            and self.subcategory == "threats"
+                            else ""
+                        )
+                        + ". Thank you for reporting. Our content moderation team will review the message and decide on the appropriate action, which may be removal of the message, suspension of the account/user, or both."
+                        + " \n **We strongly advise you to contact 911 or your local authorities.**"
+                        + '\n\n**Action Item:** Would you like to block this user to prevent them for sending you messages in the future? Please respond "yes" or "no".'
                     ]
                 return [
                     "Report confirmed. Your selection: Category - "
@@ -219,11 +223,14 @@ class Report:
                 return ["The user has been blocked. Thank you for your cooperation."]
             elif message.content.lower() == "no":
                 self.state = State.REPORT_COMPLETE
-                return ["Okay, the user will not be blocked. Thank you for your report."]
+                return [
+                    "Okay, the user will not be blocked. Thank you for your report."
+                ]
             else:
-                return ["Invalid response. Please reply 'yes' to block the user or 'no' to not block."]
+                return [
+                    "Invalid response. Please reply 'yes' to block the user or 'no' to not block."
+                ]
         return []
-
 
     def report_complete(self):
         return self.state == State.REPORT_COMPLETE

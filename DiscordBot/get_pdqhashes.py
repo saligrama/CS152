@@ -18,9 +18,9 @@ image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 # - Rotated 90 degrees and flipped vertically
 # - Rotated 90 degrees and flipped horizontally
 hash_vectors, quality = pdqhash.compute_dihedral(image)
-print(f'Quality: {quality}')
+print(f"Quality: {quality}")
 for hash in hash_vectors:
     hash = np.packbits(hash)
     print(hash.tobytes().hex())
     # To unpack:
-    #np.unpackbits(np.frombuffer(bytes.fromhex(hash.tobytes().hex()), dtype=np.uint8))
+    # np.unpackbits(np.frombuffer(bytes.fromhex(hash.tobytes().hex()), dtype=np.uint8))

@@ -28,7 +28,7 @@ class Review:
         reporting_message: discord.Message,
         report: Report,
         malicious_reports: MaliciousReports,
-        banned_users
+        banned_users,
     ):
         self.state = ModState.MOD_REPORT_INACTIVE
         self.reporting_message = reporting_message
@@ -72,7 +72,7 @@ class Review:
                 f"User with uid: {self.reporting_author.id} ({self.reporting_author.name}) has submitted a report, but their reporting feature is suspended due to a history of malicious reports."
             )
             return
-        
+
         fwd = await self.mod_channel.send(
             f'Forwarded message:\n{self.report.message.author.name}, (UID = {self.report.message.author.id}) : "{self.report.message.content}"'
         )
