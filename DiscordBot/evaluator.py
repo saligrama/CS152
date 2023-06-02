@@ -118,9 +118,9 @@ def openai_eval(text: str) -> Dict[str, OpenaiAction | str]:
                         "SUBTYPE_SOLICITATION"
                     ],
                     "TYPE_OFFENSIVE": [
-                        "SUBTYPE_UNWANTED_SEXUAL",
-                        "SUBTYPE_CHILD_SEXUAL",
-                        "SUBTYPE_VIOLENCE_GORE",
+                        "SUBTYPE_UNWANTED_SEXUAL_CONTENT",
+                        "SUBTYPE_CHILD_SEXUAL_CONTENT",
+                        "SUBTYPE_VIOLENCE_OR_GORE",
                         "SUBTYPE_TERRORISM"
                     ],
                     "TYPE_HARASSMENT": [
@@ -133,6 +133,7 @@ def openai_eval(text: str) -> Dict[str, OpenaiAction | str]:
                         "SUBTYPE_SELF_HARM_SUICIDE": null
                         "SUBTYPE_THREATS": [
                             "SUBSUBTYPE_THREATENING_VIOLENCE",
+                            "SUBSUBTYPE_THREATENING_SELF_HARM_OR_SUICIDE",
                             "SUBSUBTYPE_GLORIFYING_VIOLENCE",
                             "SUBSUBTYPE_PUBLICIZING_PRIVATE_INFORMATION",
                             "SUBSUBTYPE_NONCONSENSUAL_INTIMATE_IMAGERY_SHARING_OR_THREATS"
@@ -152,11 +153,11 @@ def openai_eval(text: str) -> Dict[str, OpenaiAction | str]:
                     },
                     {
                         "type": "TYPE_OFFENSIVE",
-                        "subtype": "SUBTYPE_VIOLENCE_GORE" 
+                        "subtype": "SUBTYPE_VIOLENCE_OR_GORE" 
                     },
                     {
                         "type": "TYPE_OFFENSIVE",
-                        "subtype": "SUBTYPE_UNWANTED_SEXUAL" 
+                        "subtype": "SUBTYPE_UNWANTED_SEXUAL_CONTENT" 
                     },
                     {
                         "type": "TYPE_HARASSMENT",
@@ -178,11 +179,16 @@ def openai_eval(text: str) -> Dict[str, OpenaiAction | str]:
                     {
                         "type": "TYPE_IMMINENT_DANGER",
                         "subtype": "SUBTYPE_THREATS",
+                        "subsubtype": "SUBSUBTYPE_SELF_HARM_OR_SUICIDE"
+                    },
+                    {
+                        "type": "TYPE_IMMINENT_DANGER",
+                        "subtype": "SUBTYPE_THREATS",
                         "subsubtype": "SUBSUBTYPE_NONCONSENSUAL_INTIMATE_IMAGERY_SHARING_OR_THREATS"
                     },
                     {
                         "type": "TYPE_OFFENSIVE",
-                        "subtype": "SUBTYPE_CHILD_SEXUAL" 
+                        "subtype": "SUBTYPE_CHILD_SEXUAL_CONTENT" 
                     },
                     {
                         "type": "TYPE_HARASSMENT",
@@ -288,7 +294,7 @@ def openai_eval(text: str) -> Dict[str, OpenaiAction | str]:
                     {
                         "type": "TYPE_IMMINENT_DANGER",
                         "subtype": "SUBTYPE_THREATS",
-                        "subsubtype": "SUBSUBTYPE_THREATENING_VIOLENCE",
+                        "subsubtype": "SUBSUBTYPE_SELF_HARM_OR_SUICIDE",
                         "suggested_action": "ACTION_FLAG_DELETE_SUSPEND",
                     }
                 ),
@@ -374,6 +380,22 @@ def openai_eval(text: str) -> Dict[str, OpenaiAction | str]:
         gpt_classification["suggested_action"] = OpenaiAction[
             gpt_classification["suggested_action"]
         ]
+
+        if "type" in gpt_classification.keys():
+            gpt_classification["type"] = " ".join(
+                gpt_classification["type"].lower().split("_")[1:]
+            )
+
+        if "subtype" in gpt_classification.keys():
+            gpt_classification["subtype"] = " ".join(
+                gpt_classification["subtype"].lower().split("_")[1:]
+            )
+
+        if "subsubtype" in gpt_classification.keys():
+            gpt_classification["subsubtype"] = " ".join(
+                gpt_classification["subsubtype"].lower().split("_")[1:]
+            )
+
         return gpt_classification
     except ValueError:
         return {"suggested_action": OpenaiAction.ACTION_NONE}
