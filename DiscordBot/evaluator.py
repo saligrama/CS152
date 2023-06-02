@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import json
 from typing import Optional
 from enum import Enum, auto
 import discord
@@ -101,71 +102,271 @@ def openai_eval_threatening(text: str) -> OpenaiAction:
         messages=[
             {
                 "role": "system",
-                "content": """You are a content moderation system. You will be given a message that should be evaluated based on how harmful it is to a user that sees it. Your suggestions will be used to potentially delete the message, suspend or ban the message's author, or pass the message along to a human for further review.
+                "content": """You are a content moderation system that only speaks JSON (do not respond with normal text). You will be given a message that should be evaluated based on how harmful it is to a user that sees it. Your suggestions will be used to potentially delete the message, suspend or ban the message's author, or pass the message along to a human for further review.
 
-                When given a message, please respond with exactly one of the following responses and no other text:
+                The types of messages that violate conduct guidelines can be expressed with the following JSON schema:
 
-                `ACTION_FLAG_DELETE`, which suggests that the message should be automatically deleted and also sent to a human for further review. The categories of message you should respond with `ACTION_FLAG_DELETE` are: “Violence and Gore”, “Coercing Sexual Favors or Content”, “Solicitation”, “Unwanted Sexual Content”, “Hate Speech”.
+                ```{
+                    "TYPE_SPAM": [
+                        "SUBTYPE_FRAUD",
+                        "SUBTYPE_IMPERSONATION",
+                        "SUBTYPE_SOLICITATION"
+                    ],
+                    "TYPE_OFFENSIVE": [
+                        "SUBTYPE_UNWANTED_SEXUAL",
+                        "SUBTYPE_CHILD_SEXUAL",
+                        "SUBTYPE_VIOLENCE_GORE",
+                        "SUBTYPE_TERRORISM"
+                    ],
+                    "TYPE_HARASSMENT": [
+                        "SUBTYPE_BULLYING",
+                        "SUBTYPE_HATE_SPEECH",
+                        "SUBTYPE_SEXUAL_HARASSMENT",
+                        "SUBTYPE_SEXUAL_COERCION"
+                    ],
+                    "TYPE_IMMINENT_DANGER": {
+                        "SUBTYPE_SELF_HARM_SUICIDE": null
+                        "SUBTYPE_THREATS": [
+                            "SUBSUBTYPE_THREATENING_VIOLENCE",
+                            "SUBSUBTYPE_GLORIFYING_VIOLENCE",
+                            "SUBSUBTYPE_PUBLICIZING_PRIVATE_INFORMATION",
+                            "SUBSUBTYPE_NONCONSENSUAL_INTIMATE_IMAGERY_SHARING_OR_THREATS"
+                        ],
+                    },
+                }```
 
-                `ACTION_FLAG_DELETE_SUSPEND`, which suggests that the message should be automatically deleted, its author be suspended, and also sent to a human for further review. The categories of message you should respond with `ACTION_FLAG_DELETE` are:  “Threatening Violence”, “Threats to Share Intimate Imagery”, “Self Harm and Suicide”, “Non-Consensual Intimate Imagery”, “Child Sex Abuse Content”, “Sexual Harassment”, “Publicizing Private Information”, “Sexual Harassment”, “Publicizing Private Information”, “Glorifying Violence”.
+                Please classify an incoming message as one of the above types and subtypes, with a subsubtype if applicable. Format these into JSON fields "type", "subtype", and "subsubtype" (which can be null).
 
-                `ACTION_DELETE`, which suggests that the message should be automatically deleted, but it won't be flagged for human review. The categories of message you should respond with `ACTION_DELETE` are: “Fraud”, “Impersonation”.
+                When given a message, the "suggested_action" field of your JSON response should be exactly one of the following.
 
-                `ACTION_FLAG`, which suggests that the message should be sent to a human review. Use this option if you are unsure about what action to take on the message.
+                `ACTION_FLAG_DELETE`, which suggests that the message should be automatically deleted and also sent to a human for further review. The categories of message you should respond with `ACTION_FLAG_DELETE` are:
+                
+                    {
+                        "type": "SUBTYPE_SEXUAL_HARASSMENT",
+                        "subtype": "SUBTYPE_SEXUAL_COERCION" 
+                    },
+                    {
+                        "type": "TYPE_OFFENSIVE",
+                        "subtype": "SUBTYPE_VIOLENCE_GORE" 
+                    },
+                    {
+                        "type": "TYPE_OFFENSIVE",
+                        "subtype": "SUBTYPE_UNWANTED_SEXUAL" 
+                    },
+                    {
+                        "type": "TYPE_HARASSMENT",
+                        "subtype": "SUBTYPE_HATE_SPEECH" 
+                    },
+
+                `ACTION_FLAG_DELETE_SUSPEND`, which suggests that the message should be automatically deleted, its author be suspended, and also sent to a human for further review. The categories of message you should respond with `ACTION_FLAG_DELETE_SUSPEND` are:
+
+                    {
+                        "type": "TYPE_IMMINENT_DANGER",
+                        "subtype": "SUBTYPE_THREATS",
+                        "subsubtype": "SUBSUBTYPE_THREATENING_VIOLENCE"
+                    },
+                    {
+                        "type": "TYPE_IMMINENT_DANGER",
+                        "subtype": "SUBTYPE_THREATS",
+                        "subsubtype": "SUBSUBTYPE_GLORIFYING_VIOLENCE"
+                    },
+                    {
+                        "type": "TYPE_IMMINENT_DANGER",
+                        "subtype": "SUBTYPE_THREATS",
+                        "subsubtype": "SUBSUBTYPE_NONCONSENSUAL_INTIMATE_IMAGERY_SHARING_OR_THREATS"
+                    },
+                    {
+                        "type": "TYPE_OFFENSIVE",
+                        "subtype": "SUBTYPE_CHILD_SEXUAL" 
+                    },
+                    {
+                        "type": "TYPE_HARASSMENT",
+                        "subtype": "SUBTYPE_SEXUAL_HARASSMENT" 
+                    },
+                    {
+                        "type": "TYPE_IMMINENT_DANGER",
+                        "subtype": "SUBTYPE_THREATS"
+                        "subsubtype": "SUBSUBTYPE_PUBLICIZING_PRIVATE_INFORMATION"
+                    },
+                
+
+                `ACTION_DELETE`, which suggests that the message should be automatically deleted, but it won't be flagged for human review. The categories of message you should respond with `ACTION_DELETE` are: 
+
+                    {
+                        "type": "TYPE_SPAM",
+                        "subtype": "SUBTYPE_FRAUD" 
+                    },
+                    {
+                        "type": "TYPE_OFFENSIVE",
+                        "subtype": "SUBTYPE_IMPERSONATION" 
+                    },
+                    {
+                        "type": "TYPE_OFFENSIVE",
+                        "subtype": "SUBTYPE_SOLICITATION" 
+                    },
+                    
+                `ACTION_FLAG`, which suggests that the message should be sent to a human review. Use this option if you are unsure about what action to take on the message. The categories of message you should respond to with `ACTION_FLAG` are:
+
+                    {
+                        "type": "TYPE_HARASSMENT",
+                        "subtype": "SUBTYPE_BULLYING" 
+                    },                
 
                 `ACTION_NONE`, which suggests that the message is not in violation of any conduct guidelines.
 
-                Here are some examples of suggested responses. If you don't think a message fits into one of the categories provided above (i.e., it doesn't look anything like the examples provided below), respond by default with `ACTION_NONE`.""",
+                Here are some examples of suggested responses. If you don't think a message fits into one of the categories provided above (i.e., it doesn't look anything like the examples provided below), respond by default with the following JSON blob:
+
+                {
+                    "suggested_action": "ACTION_NONE"
+                }
+                """,
             },
             {"role": "user", "content": "Can you send me a topless photo?"},
-            {"role": "assistant", "content": "ACTION_FLAG_DELETE"},
+            {
+                "role": "assistant",
+                "content": json.dumps(
+                    {
+                        "type": "SUBTYPE_SEXUAL_HARASSMENT",
+                        "subtype": "SUBTYPE_SEXUAL_COERCION",
+                        "suggested_action": "ACTION_FLAG_DELETE",
+                    },
+                ),
+            },
             {
                 "role": "user",
                 "content": "If I give you an address, will you go to there and steal something for me?",
             },
-            {"role": "assistant", "content": "ACTION_FLAG_DELETE"},
+            {
+                "role": "assistant",
+                "content": json.dumps(
+                    {
+                        "type": "TYPE_OFFENSIVE",
+                        "subtype": "SUBTYPE_SOLICITATION",
+                        "suggested_action": "ACTION_DELETE",
+                    }
+                ),
+            },
             {"role": "user", "content": "I'm going to kill you"},
-            {"role": "assistant", "content": "ACTION_FLAG_DELETE_SUSPEND"},
+            {
+                "role": "assistant",
+                "content": json.dumps(
+                    {
+                        "type": "TYPE_IMMINENT_DANGER",
+                        "subtype": "SUBTYPE_THREATS",
+                        "subsubtype": "SUBSUBTYPE_THREATENING_VIOLENCE",
+                        "suggested_action": "ACTION_FLAG_DELETE_SUSPEND",
+                    }
+                ),
+            },
             {
                 "role": "user",
                 "content": "I have that nude photo of you and I'm going to post it for the world to see",
             },
-            {"role": "assistant", "content": "ACTION_FLAG_DELETE_SUSPEND"},
+            {
+                "role": "assistant",
+                "content": json.dumps(
+                    {
+                        "type": "TYPE_IMMINENT_DANGER",
+                        "subtype": "SUBTYPE_THREATS",
+                        "subsubtype": "SUBSUBTYPE_NONCONSENSUAL_INTIMATE_IMAGERY_SHARING_OR_THREATS",
+                        "suggested_action": "ACTION_FLAG_DELETE_SUSPEND",
+                    }
+                ),
+            },
             {
                 "role": "user",
                 "content": "I have nobody left to turn to and I'm going to slit my wrists",
             },
-            {"role": "assistant", "content": "ACTION_FLAG_DELETE_SUSPEND"},
+            {
+                "role": "assistant",
+                "content": json.dumps(
+                    {
+                        "type": "TYPE_IMMINENT_DANGER",
+                        "subtype": "SUBTYPE_THREATS",
+                        "subsubtype": "SUBSUBTYPE_THREATENING_VIOLENCE",
+                        "suggested_action": "ACTION_FLAG_DELETE_SUSPEND",
+                    }
+                ),
+            },
             {
                 "role": "user",
                 "content": "Melissa's social security number is 178-45-5967",
             },
-            {"role": "assistant", "content": "ACTION_FLAG_DELETE_SUSPEND"},
+            {
+                "role": "assistant",
+                "content": json.dumps(
+                    {
+                        "type": "TYPE_IMMINENT_DANGER",
+                        "subtype": "SUBTYPE_THREATS",
+                        "subsubtype": "SUBSUBTYPE_PUBLICIZING_PRIVATE_INFORMATION",
+                        "suggested_action": "ACTION_FLAG_DELETE_SUSPEND",
+                    }
+                ),
+            },
             {
                 "role": "user",
                 "content": "I really love watching people get physically abused",
             },
-            {"role": "assistant", "content": "ACTION_FLAG_DELETE_SUSPEND"},
+            {
+                "role": "assistant",
+                "content": json.dumps(
+                    {
+                        "type": "TYPE_IMMINENT_DANGER",
+                        "subtype": "SUBTYPE_THREATS",
+                        "subsubtype": "SUBSUBTYPE_GLORIFYING_VIOLENCE",
+                        "suggested_action": "ACTION_FLAG_DELETE_SUSPEND",
+                    }
+                ),
+            },
             {
                 "role": "user",
                 "content": "Send $3,000 to this account and get tickets to meet Beyonce!",
             },
-            {"role": "assistant", "content": "ACTION_DELETE"},
+            {
+                "role": "assistant",
+                "content": json.dumps(
+                    {
+                        "type": "TYPE_SPAM",
+                        "subtype": "SUBTYPE_FRAUD",
+                        "suggested_action": "ACTION_DELETE",
+                    }
+                ),
+            },
             {
                 "role": "user",
                 "content": "This is Elon Musk! Congratulations! You just won a Tesla Model X!",
             },
-            {"role": "assistant", "content": "ACTION_DELETE"},
+            {
+                "role": "assistant",
+                "content": json.dumps(
+                    {
+                        "type": "TYPE_SPAM",
+                        "subtype": "SUBTYPE_IMPERSONATION",
+                        "suggested_action": "ACTION_DELETE",
+                    }
+                ),
+            },
             {
                 "role": "user",
                 "content": "You're a loser!",
             },
-            {"role": "assistant", "content": "ACTION_DELETE"},
+            {
+                "role": "assistant",
+                "content": json.dumps(
+                    {
+                        "type": "TYPE_HARASSMENT",
+                        "subtype": "SUBTYPE_BULLYING",
+                        "suggested_action": "ACTION_FLAG",
+                    }
+                ),
+            },
             {"role": "user", "content": text},
         ],
     )
 
     try:
-        return OpenaiAction[response["choices"][0]["message"]["content"]]
-    except ValueError:
+        print(response["choices"][0]["message"]["content"])
         return OpenaiAction.ACTION_NONE
+        # return response["choices"][0]["message"]["content"]
+    except ValueError:
+        pass
