@@ -117,12 +117,17 @@ class ModBot(discord.Client):
         # TODO policy decision? do any of these get auto deleted?
         results = evaluator.eval_all(message)
 
-        if results.openai_suggested_action != evaluator.OpenaiAction.ACTION_NONE:
+        if (
+            results.openai_result["suggested_action"]
+            != evaluator.OpenaiAction.ACTION_NONE
+        ):
             mod_channel = self.mod_channels[message.guild.id]
             rp = Report(self)
             rp.state = rp.report_complete
-            rp.category = "misc"
-            rp.subcategory = "misc"
+            rp.category = results.openai_result["type"]
+            rp.subcategory = results.openai_result["subtype"]
+            if "subsubtype" in results.openai_result.keys():
+                rp.subsubcategory = results.openai_result["subsubtype"]
             rp.message = message
             rp.context = [
                 message

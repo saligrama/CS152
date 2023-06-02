@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 import json
-from typing import Optional
+from typing import Optional, Dict
 from enum import Enum, auto
 import discord
 import openai
@@ -37,18 +37,19 @@ class OpenaiAction(Enum):
 
 @dataclass
 class EvaluationResult:
-    openai_suggested_action: OpenaiAction
+    openai_result: Dict[str, OpenaiAction | str]
     pdq_max_similarity: float
 
     def pretty_print(self) -> str:
-        return f"""OpenAI suggested action: {self.openai_suggested_action}
+        return f"""
+        OpenAI suggested action: {self.openai_result["suggested_action"]}
         
         PDQ max similarity (known NCII): {self.pdq_max_similarity}"""
 
 
 def eval_all(message: discord.Message) -> EvaluationResult:
     return EvaluationResult(
-        openai_suggested_action=openai_eval_threatening(message.content),
+        openai_result=openai_eval(message.content),
         pdq_max_similarity=pdq_eval_max_similarity(message),
     )
 
@@ -96,7 +97,7 @@ def pdq_eval_max_similarity(message: discord.Message) -> Optional[float]:
     return max_sim
 
 
-def openai_eval_threatening(text: str) -> OpenaiAction:
+def openai_eval(text: str) -> Dict[str, OpenaiAction | str]:
     response = openai.ChatCompletion.create(
         model="gpt-4",
         messages=[
@@ -365,8 +366,10 @@ def openai_eval_threatening(text: str) -> OpenaiAction:
     )
 
     try:
-        print(response["choices"][0]["message"]["content"])
-        return OpenaiAction.ACTION_NONE
-        # return response["choices"][0]["message"]["content"]
+        gpt_classification = json.loads(response["choices"][0]["message"]["content"])
+        gpt_classification["suggested_action"] = OpenaiAction[
+            gpt_classification["suggested_action"]
+        ]
+        return gpt_classification
     except ValueError:
-        pass
+        return {"suggested_action": OpenaiAction.ACTION_NONE}
