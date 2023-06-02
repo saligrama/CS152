@@ -48,9 +48,9 @@ class EvaluationResult:
     def pretty_print(self) -> str:
         return dedent(
             f"""\
-            OpenAI suggested action: {self.openai_result["suggested_action"]}
+            **OpenAI suggested action**: {self.openai_result["suggested_action"]}
 
-            PDQ max similarity (known NCII): {self.pdq_max_similarity}\
+            **PDQ max similarity (known NCII)**: {self.pdq_max_similarity}\
             """
         )
 

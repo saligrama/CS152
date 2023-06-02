@@ -62,6 +62,7 @@ class Review:
 
     async def begin_mod_flow(self):
         self.began = True
+        await self.mod_channel.send("# New message reported")
         # Forward the message to the mod channel
         if (
             self.reporting_author.id
@@ -78,7 +79,7 @@ class Review:
             return
 
         fwd = await self.mod_channel.send(
-            f'Forwarded message:\n{self.report.message.author.name}, (UID = {self.report.message.author.id}) : "{self.report.message.content}"'
+            f'**Forwarded message**:\n{self.report.message.author.name}, (UID = {self.report.message.author.id}) : "{self.report.message.content}"'
         )
         self.malicious_reports.reportMsgIDtoUserID[fwd.id] = self.reporting_author.id
         await fwd.add_reaction("⏫")
@@ -88,25 +89,31 @@ class Review:
             for message in self.report.context
         ]
         context_strings = "\n  ".join(context_strings)
-        await self.mod_channel.send(f"Surrounding context:\n  {context_strings}")
+        await self.mod_channel.send(f"## Surrounding context:\n  {context_strings}")
 
         for a in self.report.message.attachments:
             await self.mod_channel.send(
-                f'Has attachment with type "{a.content_type}" and description "{a.description}": '
+                f'**Has attachment with type "{a.content_type}" and description "{a.description}**": '
                 + a.proxy_url
             )
 
+        await self.mod_channel.send("## Other info")
+
         await self.mod_channel.send(
-            f"Reported for: ({self.report.category}, {self.report.subcategory}, {self.report.subsubcategory})"
+            f"**Reported for**: {self.report.category} -> {self.report.subcategory} -> {self.report.subsubcategory}"
         )
 
         if not self.openai_result:
             self.openai_result = evaluator.eval_all(self.report.message)
+
         await self.mod_channel.send(self.openai_result.pretty_print())
 
+        await self.mod_channel.send("## Begin review response")
+
         await self.mod_channel.send(
-            "At any point during the report handling process, please react with ⏫ to the forwarded message to escalate to higher level reviewers in case of ambiguity."
+            "**At any point during the report handling process, please react with ⏫ to the forwarded message to escalate to higher level reviewers in case of ambiguity.**"
         )
+
         await self.mod_channel.send(
             "Is anyone in immediate danger? Please respond with yes or no."
         )
