@@ -136,7 +136,7 @@ class ModBot(discord.Client):
             ]
             rp.context.sort(key=lambda m: m.created_at)
             await self.do_mod_flow(mod_channel, rp, message, results)
-        elif results.pdq_max_similarity > 0.9:
+        elif results.pdq_max_similarity > 0.9: # TODO maybe at 0.96 or so also autodelete
             mod_channel = self.mod_channels[message.guild.id]
             rp = Report(self)
             rp.state = rp.report_complete
