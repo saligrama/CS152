@@ -125,7 +125,6 @@ class ModBot(discord.Client):
         # TODO set reporter appropriately to bot, so it's clear to moderator that this is a system autoflag
         # TODO policy decision? do any of these get auto deleted?
         results = evaluator.eval_all(message)
-        print(results)
 
         if (
             results.openai_result["suggested_action"]
@@ -133,7 +132,6 @@ class ModBot(discord.Client):
             or 
             results.perspetive_results != "NONE"
         ):
-            print(results)
             mod_channel = self.mod_channels[message.guild.id]
             rp = Report(self)
             rp.state = rp.report_complete

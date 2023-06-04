@@ -55,7 +55,6 @@ class EvaluationResult:
 
 
 def eval_all(message: discord.Message) -> EvaluationResult:
-    print(perspective_eval(message.content))
     return EvaluationResult(
         openai_result=openai_eval(message.content),
         pdq_max_similarity=pdq_eval_max_similarity(message),
@@ -115,7 +114,6 @@ def perspective_eval(text):
     }
 
     response = perspective_client.comments().analyze(body=analyze_request).execute()
-    print(response['attributeScores']['TOXICITY']['summaryScore']['value'])
     for i in reqatts.keys():
         if response['attributeScores'][i]['summaryScore']['value'] > 0.5:
             detection = True
