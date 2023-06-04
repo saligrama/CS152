@@ -13,6 +13,7 @@ from review import Review
 from malicious_reports import MaliciousReports
 import pdb
 from enum import Enum, auto
+from googleapiclient import discovery
 
 
 class ModState(Enum):
@@ -46,6 +47,13 @@ with open(token_path) as f:
     discord_token = tokens["discord"]
     evaluator.openai.organization = tokens["openai"]["organization"]
     evaluator.openai.api_key = tokens["openai"]["api_key"]
+    evaluator.perspective_client = discovery.build(
+        "commentanalyzer",
+        "v1alpha1",
+        developerKey=tokens["perspective"],
+        discoveryServiceUrl="https://commentanalyzer.googleapis.com/$discovery/rest?version=v1alpha1",
+        static_discovery=False,
+        )
 
 
 class ModBot(discord.Client):
@@ -117,18 +125,25 @@ class ModBot(discord.Client):
         # TODO set reporter appropriately to bot, so it's clear to moderator that this is a system autoflag
         # TODO policy decision? do any of these get auto deleted?
         results = evaluator.eval_all(message)
+        print(results)
 
         if (
             results.openai_result["suggested_action"]
             != evaluator.OpenaiAction.ACTION_NONE
+            or 
+            results.perspetive_results != "NONE"
         ):
+            print(results)
             mod_channel = self.mod_channels[message.guild.id]
             rp = Report(self)
             rp.state = rp.report_complete
-            rp.category = results.openai_result["type"]
-            rp.subcategory = results.openai_result["subtype"]
+            if "type" in results.openai_result.keys():
+                rp.category = results.openai_result["type"]
+            if "subtype" in results.openai_result.keys():
+                rp.subcategory = results.openai_result["subtype"]   
             if "subsubtype" in results.openai_result.keys():
                 rp.subsubcategory = results.openai_result["subsubtype"]
+            rp.perspective_categories = results.perspetive_results
             rp.message = message
             rp.context = [
                 message
@@ -180,7 +195,7 @@ class ModBot(discord.Client):
 
         # If the report is complete or cancelled, remove it from our map
         if self.reports[author_id].report_complete():
-            mod_channel = self.mod_channels[self.reports[author_id].message.guild.id]
+            mod_channel = self.mod_channels[message.guild.id]
             await self.do_mod_flow(mod_channel, self.reports[author_id], message, None)
             self.reports.pop(author_id)
 

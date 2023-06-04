@@ -52,7 +52,7 @@ class Report:
         self.client = client
         self.message = None
         self.context = None
-        self.category = self.subcategory = self.subsubcategory = None
+        self.perspective_categories = self.category = self.subcategory = self.subsubcategory = None
         self.imminent_danger = False
 
     async def handle_message(self, message: discord.Message):

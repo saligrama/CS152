@@ -9,7 +9,9 @@ import requests
 import cv2
 import pdqhash
 import numpy as np
+from googleapiclient import discovery
 
+perspective_client ={}
 PDQ_BLACKLIST = [
     "90457290b72f220c6ad248565b23bbdccc698356bb63c97952cab4d769a6f963", #img 1
     "ab1127cbf1a5329583cee5ca3cc44663b0f3a87903c095e33d8d9eae665e525a", #img 2
@@ -37,13 +39,15 @@ class OpenaiAction(Enum):
 
 @dataclass
 class EvaluationResult:
-    openai_result: Dict[str, OpenaiAction | str]
+    openai_result: Dict[str,  str]
     pdq_max_similarity: float
-
+    perspetive_results: str
     def pretty_print(self) -> str:
         return dedent(
             f"""\
             **OpenAI suggested action**: {self.openai_result["suggested_action"]}
+
+            **Perspective detected issues **: {self.perspetive_results}
 
             **PDQ max similarity (known NCII)**: {self.pdq_max_similarity}\
             """
@@ -51,9 +55,11 @@ class EvaluationResult:
 
 
 def eval_all(message: discord.Message) -> EvaluationResult:
+    print(perspective_eval(message.content))
     return EvaluationResult(
         openai_result=openai_eval(message.content),
         pdq_max_similarity=pdq_eval_max_similarity(message),
+        perspetive_results=perspective_eval(message.content)
     )
 
 
@@ -99,8 +105,28 @@ def pdq_eval_max_similarity(message: discord.Message) -> Optional[float]:
             # print(quality)
     return max_sim
 
+def perspective_eval(text):
+    detection = False
+    detected_cats = ""
+    reqatts = {'SEVERE_TOXICITY': {}, 'THREAT':{}, 'TOXICITY': {}, 'IDENTITY_ATTACK':{}, 'PROFANITY':{}, 'INSULT':{}}
+    analyze_request = {
+    'comment': { 'text': text},
+    'requestedAttributes': reqatts
+    }
 
-def openai_eval(text: str) -> Dict[str, OpenaiAction | str]:
+    response = perspective_client.comments().analyze(body=analyze_request).execute()
+    print(response['attributeScores']['TOXICITY']['summaryScore']['value'])
+    for i in reqatts.keys():
+        if response['attributeScores'][i]['summaryScore']['value'] > 0.5:
+            detection = True
+            if (detected_cats != ""):
+                detected_cats += ','
+            detected_cats += i
+    if not detection:
+        detected_cats = "NONE"
+    return detected_cats
+
+def openai_eval(text: str):
     try:
         response = openai.ChatCompletion.create(
             model="gpt-4",

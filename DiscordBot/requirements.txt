@@ -4,3 +4,4 @@ pdqhash
 openai
 opencv-python-headless
 numpy
+google-api-python-client
