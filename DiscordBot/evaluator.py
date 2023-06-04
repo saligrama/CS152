@@ -115,6 +115,8 @@ def perspective_eval(text):
 
     response = perspective_client.comments().analyze(body=analyze_request).execute()
     for i in reqatts.keys():
+        print (i + " : ")
+        print (response['attributeScores'][i]['summaryScore']['value'])
         if response['attributeScores'][i]['summaryScore']['value'] > 0.5:
             detection = True
             if (detected_cats != ""):
