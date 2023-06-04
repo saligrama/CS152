@@ -10,7 +10,7 @@ import cv2
 import numpy as np
 
 
-token_path = "tokens.json"
+token_path = "../tokens.json"
 if not os.path.isfile(token_path):
     raise Exception(f"{token_path} not found!")
 with open(token_path) as f:
@@ -43,7 +43,8 @@ for response in responses:
                 Keep the first few interactions to connecting with the victim and then proceed to share details relating to the activity or point of connection.
                 Try to be as relatable as possible.  After the first few interactions you can work your way towards asking for a call in order to get to know the person
                 even better.  Try to avoid explicitly stating intimate expressions and requests but you can work towards that direction.
-                """,
+                """
+                ,
             },
             {"role": "user", "content": content},
         ],
