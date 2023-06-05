@@ -59,6 +59,7 @@ class Review:
             await self.mod_channel.send(
                 "Report escalated to higher level reviewers due to ⏫ reaction."
             )
+            self.state = ModState.MOD_REPORT_INACTIVE
 
     async def begin_mod_flow(self):
         self.began = True

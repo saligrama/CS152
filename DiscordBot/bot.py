@@ -118,7 +118,6 @@ class ModBot(discord.Client):
 
         #making sure that there is only one active report at a time in our pipeline
         if self.reviews != {} and not self.reviews.is_done():
-            print(self.reviews.state)
             return
         
         # the automatic detection pipeline function to be implemented
