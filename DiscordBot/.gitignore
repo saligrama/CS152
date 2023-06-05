@@ -1,3 +1,7 @@
 tokens.json
 __pycache__
 env/
+eval/eval.csv
+.DS_Store
+
+
