@@ -1,6 +1,7 @@
 import csv
 import json
 import openai
+import backoff
 from typing import Dict
 
 OPENAI_PROMPT = open("prompts/moderator.txt", "r").read()
@@ -23,6 +24,7 @@ with open("tokens.json", "r") as f:
     openai.api_key = tokens["openai"]["api_key"]
 
 
+@backoff.on_exception(backoff.expo, openai.error.RateLimitError)
 def openai_eval(text: str) -> Dict[str, str]:
     try:
         response = openai.ChatCompletion.create(
@@ -36,7 +38,7 @@ def openai_eval(text: str) -> Dict[str, str]:
         )
 
         return json.loads(response["choices"][0]["message"]["content"])
-    except Exception as e:
+    except ValueError as e:
         print(e)
         return {"suggested_action": "OPENAI_ERROR"}
 
@@ -44,6 +46,7 @@ def openai_eval(text: str) -> Dict[str, str]:
 if __name__ == "__main__":
     matched_action = 0
     expected_classified = 0
+    evaluated = 0
     tp, fp, tn, fn = 0, 0, 0, 0
     with open("eval/openai_eval_results.csv", "w") as eout:
         writer = csv.writer(eout)
@@ -54,6 +57,7 @@ if __name__ == "__main__":
             if result["suggested_action"] != "OPENAI_ERROR":
                 if expected_classification != "ACTION_NONE":
                     expected_classified += 1
+                    evaluated += 1
 
                 openai_classification = (
                     result["suggested_action"]
@@ -82,16 +86,8 @@ if __name__ == "__main__":
                 mar = matched_action / expected_classified
                 tpr = tp / expected_classified
                 fnr = fn / expected_classified
-                fpr = (
-                    (fp / (i + 1 - expected_classified))
-                    if (i + 1 - expected_classified) > 0
-                    else 0
-                )
-                tnr = (
-                    (tn / (i + 1 - expected_classified))
-                    if (i + 1 - expected_classified) > 0
-                    else 0
-                )
+                fpr = (fp / (i + 1 - evaluated)) if (i + 1 - evaluated) > 0 else 0
+                tnr = (tn / (i + 1 - evaluated)) if (i + 1 - evaluated) > 0 else 0
 
                 print(
                     f"After example {i+1} EC={expected_classified} MA={mar} TP={tpr} FP={fpr} TN={tnr} FN={fnr}"
