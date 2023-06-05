@@ -53,7 +53,7 @@ with open(token_path) as f:
         developerKey=tokens["perspective"],
         discoveryServiceUrl="https://commentanalyzer.googleapis.com/$discovery/rest?version=v1alpha1",
         static_discovery=False,
-        )
+    )
 
 
 class ModBot(discord.Client):
@@ -129,8 +129,7 @@ class ModBot(discord.Client):
         if (
             results.openai_result["suggested_action"]
             != evaluator.OpenaiAction.ACTION_NONE
-            or 
-            results.perspetive_results != "NONE"
+            or len(results.perspective_results) > 0
         ):
             mod_channel = self.mod_channels[message.guild.id]
             rp = Report(self)
@@ -138,10 +137,10 @@ class ModBot(discord.Client):
             if "type" in results.openai_result.keys():
                 rp.category = results.openai_result["type"]
             if "subtype" in results.openai_result.keys():
-                rp.subcategory = results.openai_result["subtype"]   
+                rp.subcategory = results.openai_result["subtype"]
             if "subsubtype" in results.openai_result.keys():
                 rp.subsubcategory = results.openai_result["subsubtype"]
-            rp.perspective_categories = results.perspetive_results
+            rp.perspective_categories = results.perspective_results
             rp.message = message
             rp.context = [
                 message
@@ -149,7 +148,9 @@ class ModBot(discord.Client):
             ]
             rp.context.sort(key=lambda m: m.created_at)
             await self.do_mod_flow(mod_channel, rp, message, results)
-        elif results.pdq_max_similarity > 0.9: # TODO maybe at 0.96 or so also autodelete
+        elif (
+            results.pdq_max_similarity > 0.9
+        ):  # TODO maybe at 0.96 or so also autodelete
             mod_channel = self.mod_channels[message.guild.id]
             rp = Report(self)
             rp.state = rp.report_complete
@@ -227,7 +228,7 @@ class ModBot(discord.Client):
         mod_channel: discord.TextChannel,
         report: Report,
         message: discord.Message,
-        openai_result: Optional[evaluator.EvaluationResult] = None,
+        eval_result: Optional[evaluator.EvaluationResult] = None,
     ):
         self.reviews[message.id] = Review(
             mod_channel,
@@ -235,7 +236,7 @@ class ModBot(discord.Client):
             report,
             self.malicious_reports,
             self.banned_users,
-            openai_result=openai_result,
+            eval_result=eval_result,
         )
         await self.reviews[message.id].begin_mod_flow()
 

@@ -49,14 +49,14 @@ class OpenaiAction(Enum):
 class EvaluationResult:
     openai_result: Dict[str, str]
     pdq_max_similarity: float
-    perspetive_results: str
+    perspective_results: Dict[str, float]
 
     def pretty_print(self) -> str:
         return dedent(
             f"""\
             **OpenAI suggested action**: {self.openai_result["suggested_action"]}
 
-            **Perspective detected issues **: {self.perspetive_results}
+            **Perspective detected issues **: {[f'{category} (score: {score: .3f})' for category, score in self.perspective_results.items()]}
 
             **PDQ max similarity (known NCII)**: {self.pdq_max_similarity}\
             """
@@ -67,7 +67,7 @@ def eval_all(message: discord.Message) -> EvaluationResult:
     return EvaluationResult(
         openai_result=openai_eval(message.content),
         pdq_max_similarity=pdq_eval_max_similarity(message),
-        perspetive_results=perspective_eval(message.content),
+        perspective_results=perspective_eval(message.content),
     )
 
 
@@ -114,28 +114,19 @@ def pdq_eval_max_similarity(message: discord.Message) -> Optional[float]:
     return max_sim
 
 
-def perspective_eval(text):
+def perspective_eval(text: str) -> Dict[str, float]:
     detection = False
-    detected_cats = ""
+    detected_cats: Dict[str, float] = {}
     reqatts = {"SEVERE_TOXICITY": {}, "THREAT": {}, "IDENTITY_ATTACK": {}}
     analyze_request = {"comment": {"text": text}, "requestedAttributes": reqatts}
 
     response = perspective_client.comments().analyze(body=analyze_request).execute()
-    for i in reqatts.keys():
-        print(i + " : ")
-        print(response["attributeScores"][i]["summaryScore"]["value"])
-        if response["attributeScores"][i]["summaryScore"]["value"] > 0.5:
-            detection = True
-            if detected_cats != "":
-                detected_cats += ", "
-            detected_cats += i
-            detected_cats += (
-                " : {score : "
-                + str(response["attributeScores"][i]["summaryScore"]["value"])
-                + "}"
-            )
-    if not detection:
-        detected_cats = "NONE"
+    for category in reqatts.keys():
+        if response["attributeScores"][category]["summaryScore"]["value"] > 0.5:
+            detected_cats[category] = response["attributeScores"][category][
+                "summaryScore"
+            ]["value"]
+
     return detected_cats
 
 
