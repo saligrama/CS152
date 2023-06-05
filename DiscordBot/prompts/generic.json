@@ -1,6 +1,18 @@
 [
     {
         "role": "user",
+        "content": "You should wear skirts more often; I love the view from below."
+    },
+    {
+        "role": "assistant",
+        "content": {
+            "type": "TYPE_HARASSMENT",
+            "subtype": "SUBTYPE_SEXUAL_HARASSMENT",
+            "suggested_action": "ACTION_FLAG_DELETE"
+        }
+    },
+    {
+        "role": "user",
         "content": "You're looking really sexy, send me a nude. I just want to see you naked."
     },
     {
@@ -19,7 +31,7 @@
         "role": "assistant",
         "content": {
             "type": "TYPE_HARASSMENT",
-            "subtype": "SUBTYPE_SEXUAL_HARASSMENT",
+            "subtype": "SUBTYPE_SEXUAL_COERCION",
             "suggested_action": "ACTION_FLAG_DELETE"
         }
     },
@@ -38,6 +50,18 @@
     {
         "role": "user",
         "content": "I charge only $100 for a night of sex and bondage. I can fulfill all of your fantasies; are you interested?"
+    },
+    {
+        "role": "assistant",
+        "content": {
+            "type": "TYPE_OFFENSIVE",
+            "subtype": "SUBTYPE_SOLICITATION",
+            "suggested_action": "ACTION_DELETE"
+        }
+    },
+    {
+        "role": "user",
+        "content": "Grow your wealth exponentially! Invest in our guaranteed high return forex trading program today."
     },
     {
         "role": "assistant",

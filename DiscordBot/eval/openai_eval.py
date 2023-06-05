@@ -38,32 +38,57 @@ def openai_eval(text: str) -> Dict[str, str]:
 if __name__ == "__main__":
     matched_action = 0
     expected_classified = 0
-    tp_classified = 0
-    fp_classified = 0
-    tn_unclassified = 0
-    fn_unclassified = 0
-    for i, line in enumerate(csv.reader(open("prompts/eval.json", "r"))):
-        user_content, expected_classification = line[0], line[1]
-        if expected_classification != "NONE":
-            expected_classification += 1
+    tp, fp, tn, fn = 0, 0, 0, 0
+    with open("eval/openai_eval_results.csv", "w") as eout:
+        writer = csv.writer(eout)
+        for i, line in enumerate(csv.reader(open("eval/openai_eval.csv", "r"))):
+            user_content, expected_classification = line[0], line[1]
+            if expected_classification != "NONE":
+                expected_classification += 1
 
-        result = openai_eval(user_content)
-        if result["suggested_action"] == "ACTION_NONE":
-            if expected_classification == "NONE":
-                tn_unclassified += 1
-            else:
-                fn_unclassified += 1
-        else:
-            if expected_classification == "NONE":
-                fp_classified += 1
-            else:
-                tp_classified += 1
-                if expected_classification == result["subtype"] or (
-                    "subsubtype" in result.keys()
-                    and expected_classification == result["subsubtype"]
-                ):
-                    matched_action += 1
+            openai_classification = (
+                result["suggested_action"]
+                if result["suggested_action"] == "ACTION_NONE"
+                else (
+                    result["subsubtype"]
+                    if "subsubtype" in result.keys()
+                    else result["subtype"]
+                )
+            )
 
-        print(
-            f"After example {i} EC={expected_classified} MA={matched_action/expected_classified} TP={tp_classified/(i+1)} FP={fp_classified/(i+1)} TN={tn_unclassified/(i+1)} FN={fn_unclassified/(i+1)}"
-        )
+            result = openai_eval(user_content)
+            if openai_classification == "ACTION_NONE":
+                if expected_classification == "NONE":
+                    tn += 1
+                else:
+                    fn += 1
+            else:
+                if expected_classification == "NONE":
+                    fp += 1
+                else:
+                    tp += 1
+                    if openai_classification == expected_classification:
+                        matched_action += 1
+
+            mar = matched_action / expected_classified
+            tpr = tp / expected_classified
+            fnr = fn / expected_classified
+            fpr = (
+                (fp / (i + 1 - expected_classified))
+                if (i + 1 - expected_classified) > 0
+                else 0
+            )
+            tnr = (
+                (tn / (i + 1 - expected_classified))
+                if (i + 1 - expected_classified) > 0
+                else 0
+            )
+
+            print(
+                f"After example {i+1} EC={expected_classified} MA={mar} TP={tpr} FP={fpr} TN={tnr} FN={fnr}"
+            )
+
+            writer.writerow(
+                [user_content, expected_classification, openai_classification]
+            )
+            eout.flush()
