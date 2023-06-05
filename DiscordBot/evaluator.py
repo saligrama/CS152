@@ -15,7 +15,7 @@ perspective_client = {}
 PDQ_BLACKLIST = [
     "90457290b72f220c6ad248565b23bbdccc698356bb63c97952cab4d769a6f963",  # img 1
     "ab1127cbf1a5329583cee5ca3cc44663b0f3a87903c095e33d8d9eae665e525a",  # img 2
-    "c32d343e4ed6705e2ecaec36db17724926566d8d9c1fe30d0f2e532191cb85d0",  # img 3
+    #"c32d343e4ed6705e2ecaec36db17724926566d8d9c1fe30d0f2e532191cb85d0",  # img 3
 ]
 PDQ_HASH_LENGTH = 256
 
