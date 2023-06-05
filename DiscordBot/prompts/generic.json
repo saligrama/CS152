@@ -1,0 +1,168 @@
+[
+    {
+        "role": "user",
+        "content": "You're looking really sexy, send me a nude. I just want to see you naked."
+    },
+    {
+        "role": "assistant",
+        "content": {
+            "type": "TYPE_HARASSMENT",
+            "subtype": "SUBTYPE_SEXUAL_COERCION",
+            "suggested_action": "ACTION_FLAG_DELETE"
+        }
+    },
+    {
+        "role": "user",
+        "content": "If you want that promotion, you're gonna have to have sex with me"
+    },
+    {
+        "role": "assistant",
+        "content": {
+            "type": "TYPE_HARASSMENT",
+            "subtype": "SUBTYPE_SEXUAL_HARASSMENT",
+            "suggested_action": "ACTION_FLAG_DELETE"
+        }
+    },
+    {
+        "role": "user",
+        "content": "You're a whore and a dirty Jew"
+    },
+    {
+        "role": "assistant",
+        "content": {
+            "type": "TYPE_HARASSMENT",
+            "subtype": "SUBTYPE_HATE_SPEECH",
+            "suggested_action": "ACTION_FLAG_DELETE"
+        }  
+    },
+    {
+        "role": "user",
+        "content": "I charge only $100 for a night of sex and bondage. I can fulfill all of your fantasies; are you interested?"
+    },
+    {
+        "role": "assistant",
+        "content": {
+            "type": "TYPE_OFFENSIVE",
+            "subtype": "SUBTYPE_SOLICITATION",
+            "suggested_action": "ACTION_DELETE"
+        }
+    },
+    {
+        "role": "user",
+        "content": "I'm going to beat you so hard that all your bones are going to break"
+    },
+    {
+        "role": "assistant",
+        "content": {
+            "type": "TYPE_IMMINENT_DANGER",
+            "subtype": "SUBTYPE_THREATS",
+            "subsubtype": "SUBSUBTYPE_THREATENING_VIOLENCE",
+            "suggested_action": "ACTION_FLAG_DELETE_SUSPEND"
+        }
+    },
+    {
+        "role": "user",
+        "content": "The bombs are dropping and the traitors are running! Firing squads against those who oppose us"
+    },
+    {
+        "role": "assistant",
+        "content": {
+            "type": "TYPE_OFFENSIVE",
+            "subtype": "SUBTYPE_TERRORISM",
+            "suggested_action": "ACTION_FLAG_DELETE"
+        }
+    },
+    {
+        "role": "user",
+        "content": "I have that nude photo of you and I'm going to post it for the world to see"
+    },
+    {
+        "role": "assistant",
+        "content": {
+            "type": "TYPE_IMMINENT_DANGER",
+            "subtype": "SUBTYPE_THREATS",
+            "subsubtype": "SUBSUBTYPE_NONCONSENSUAL_INTIMATE_IMAGERY_SHARING_OR_THREATS",
+            "suggested_action": "ACTION_FLAG_DELETE_SUSPEND"
+        }
+    },
+    {
+        "role": "user",
+        "content": "I have nobody left to turn to and I'm going to slit my wrists"
+    },
+    {
+        "role": "assistant",
+        "content": {
+            "type": "TYPE_IMMINENT_DANGER",
+            "subtype": "SUBTYPE_THREATS",
+            "subsubtype": "SUBSUBTYPE_SELF_HARM_OR_SUICIDE",
+            "suggested_action": "ACTION_FLAG_DELETE_SUSPEND"
+        }
+        
+    },
+    {
+        "role": "user",
+        "content": "Melissa's social security number is 178-45-5967"
+    },
+    {
+        "role": "assistant",
+        "content": {
+            "type": "TYPE_IMMINENT_DANGER",
+            "subtype": "SUBTYPE_THREATS",
+            "subsubtype": "SUBSUBTYPE_PUBLICIZING_PRIVATE_INFORMATION",
+            "suggested_action": "ACTION_FLAG_DELETE_SUSPEND"
+        }
+        
+    },
+    {
+        "role": "user",
+        "content": "Some people deserve to be physically abused, and some deserve to be killed"
+    },
+    {
+        "role": "assistant",
+        "content": {
+            "type": "TYPE_IMMINENT_DANGER",
+            "subtype": "SUBTYPE_THREATS",
+            "subsubtype": "SUBSUBTYPE_GLORIFYING_VIOLENCE",
+            "suggested_action": "ACTION_FLAG_DELETE_SUSPEND"
+        }
+        
+    },
+    {
+        "role": "user",
+        "content": "Send $3,000 to this account and get tickets to meet Beyonce!"
+    },
+    {
+        "role": "assistant",
+        "content": {
+            "type": "TYPE_SPAM",
+            "subtype": "SUBTYPE_FRAUD",
+            "suggested_action": "ACTION_DELETE"
+        }
+        
+    },
+    {
+        "role": "user",
+        "content": "This is Elon Musk! Congratulations! You just won a Tesla Model X!"
+    },
+    {
+        "role": "assistant",
+        "content": {
+            "type": "TYPE_SPAM",
+            "subtype": "SUBTYPE_IMPERSONATION",
+            "suggested_action": "ACTION_DELETE"
+        }
+    },
+    {
+        "role": "user",
+        "content": "You're a friendless loser. No one wants to be around you"
+    },
+    {
+        "role": "assistant",
+        "content": {
+            "type": "TYPE_HARASSMENT",
+            "subtype": "SUBTYPE_BULLYING",
+            "suggested_action": "ACTION_FLAG"
+        }
+        
+    }
+]
