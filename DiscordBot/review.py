@@ -51,7 +51,7 @@ class Review:
     def handle_emoji(message: discord.Message, emoji):
         return
 
-    def is_done(self):
+    def is_done(self) -> bool:
         return self.began and self.state == ModState.MOD_REPORT_INACTIVE
 
     async def handle_raw_reaction(self, payload: discord.RawReactionActionEvent):

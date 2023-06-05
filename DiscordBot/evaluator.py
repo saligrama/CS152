@@ -136,7 +136,7 @@ def perspective_eval(text: str) -> Dict[str, float]:
     return detected_cats
 
 
-def openai_eval(text: str):
+def openai_eval(text: str) -> Dict[str, str]:
     try:
         response = openai.ChatCompletion.create(
             model="gpt-4",
