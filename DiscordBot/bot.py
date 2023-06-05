@@ -98,7 +98,7 @@ class ModBot(discord.Client):
             and payload.member.id != self.user.id
         ):
             # hacky, TODO
-            await next(iter(self.reviews.values())).handle_raw_reaction(payload)
+            await self.reviews.handle_raw_reaction(payload)
 
     async def on_message(self, message: discord.Message):
         """
@@ -111,6 +111,16 @@ class ModBot(discord.Client):
 
         if not message.guild:
             return
+        
+        if message.channel.name == f"group-{self.group_num}-mod":
+            await self.reviews.handle_message(message)
+            return
+
+        #making sure that there is only one active report at a time in our pipeline
+        if self.reviews != {} and not self.reviews.is_done():
+            print(self.reviews.state)
+            return
+        
         # the automatic detection pipeline function to be implemented
         await self.handle_automatic_detection(message)
 
@@ -213,14 +223,7 @@ class ModBot(discord.Client):
                 )
             else:
                 await self.handle_user_message(message)
-        elif message.channel.name == f"group-{self.group_num}-mod":
-            await next(iter(self.reviews.values())).handle_message(message)
 
-        # temporary abstraction: only one report at a time
-        if len(self.reviews) > 0:
-            key = next(iter(self.reviews))
-            if self.reviews[key].is_done():
-                del self.reviews[key]
 
     async def do_mod_flow(
         self,
@@ -229,7 +232,7 @@ class ModBot(discord.Client):
         message: discord.Message,
         openai_result: Optional[evaluator.EvaluationResult] = None,
     ):
-        self.reviews[message.id] = Review(
+        self.reviews = Review(
             mod_channel,
             message,
             report,
@@ -237,7 +240,7 @@ class ModBot(discord.Client):
             self.banned_users,
             openai_result=openai_result,
         )
-        await self.reviews[message.id].begin_mod_flow()
+        await self.reviews.begin_mod_flow()
 
 
 client = ModBot()
