@@ -31,6 +31,12 @@ OPENAI_EXAMPLES_GENERIC = [
     else d
     for d in json.load(open("prompts/generic.json", "r"))
 ]
+OPENAI_EXAMPLES_SEXTORTION = [
+    {"role": "assistant", "content": json.dumps(d["content"])}
+    if d["role"] == "assistant"
+    else d
+    for d in json.load(open("prompts/sextortion.json", "r"))
+]
 
 
 class OpenaiAction(Enum):
@@ -135,11 +141,9 @@ def openai_eval(text: str):
         response = openai.ChatCompletion.create(
             model="gpt-4",
             messages=[
-                {
-                    "role": "system",
-                    "content": OPENAI_PROMPT,
-                },
+                {"role": "system", "content": OPENAI_PROMPT},
                 *OPENAI_EXAMPLES_GENERIC,
+                *OPENAI_EXAMPLES_SEXTORTION,
                 {"role": "user", "content": text},
             ],
         )
