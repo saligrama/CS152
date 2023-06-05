@@ -1,0 +1,65 @@
+1. Spam - Fraud
+
+"Congratulations! You are the lucky winner of our $500,000 lottery. Click here to claim your prize immediately."
+
+"Hi there! We have noticed some suspicious activity on your bank account. Please log in via the link below to verify your transactions."
+
+"Dear customer, you are selected! Participate in our quick survey and get a chance to win an iPhone 12 Pro Max for free."
+
+"Unexpected money transfer has been initiated from your account. Click on the following link to reverse it now!"
+
+"Your email has been chosen as the lucky winner of our jackpot. Enter your bank details here to receive $1,000,000 now."
+
+2. Spam - Impersonation
+
+"This is your boss speaking. I'm stuck in a meeting and can't use my office email. Can you purchase gift cards for the team and email the codes to me?"
+
+"Hi, this is Microsoft Support. We have detected a virus on your computer. Kindly install the software from the link below to remove it."
+
+"This is your bank. We have detected unusual activity on your account. Please verify your account details by clicking on this link."
+
+"Dear user, your Facebook account is at risk of deactivation due to policy violation. Log in through this link to confirm your identity."
+
+"Hello, I am from the IRS and we have noticed discrepancies in your tax filings. Click here to avoid penalties."
+
+3. Spam - Solicitation
+
+"Grow your wealth exponentially! Invest in our guaranteed high return forex trading program today."
+
+"Want to lose weight without diet or exercise? Try our miraculous herbal supplement. Click here for free trial."
+
+"Amazing opportunity to earn money from home! Click the link below to join our fast-growing team of digital marketers."
+
+"Save your electricity bills with our free solar panel installation. Limited offer, claim your spot now."
+
+"Can't find true love? Try our dating site and meet thousands of singles worldwide. Sign up here."
+
+4. Ambiguous Messages
+
+"Hey, it's been a while. Can we catch up soon? I have a great business opportunity for you."
+
+"Congratulations! Your performance at work caught our eye. How about a quick call to discuss your future?"
+
+"You won't believe what I've discovered! This new investment platform is amazing."
+
+"Your profile seems a perfect fit for our company. Would you be interested in exploring new job opportunities?"
+
+"Did you know that people are making a lot of money with Bitcoin? Have you thought about it?"
+
+5. Genuine Non-Spam Messages
+
+"Hi, do you have time to discuss the project updates tomorrow? Let me know what time works for you."
+
+"Don't forget about our meeting this Friday. I'll send the agenda in advance."
+
+"I found this interesting article on AI trends. Thought you might find it insightful. Here's the link."
+
+"Hey, are you coming to the charity event this weekend? It's for a good cause."
+
+"You left your keys in my car. I can drop them off at your place later today."
+
+"Let's have lunch together tomorrow. The new Thai place downtown looks promising."
+
+"Check out this new book I started reading. I think you'll really enjoy it."
+
+"Your car is blocking my driveway. Could you please move it?"

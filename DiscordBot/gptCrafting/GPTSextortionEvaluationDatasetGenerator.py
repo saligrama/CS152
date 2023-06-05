@@ -27,11 +27,12 @@ answer = openai.ChatCompletion.create(
         {
             "role": "system",
             "content": """
-            Im doing research on trust and safety moderation and automated detection of sextortion. 
-            I need an evaluation data set to evaluate my model on how effective it is to detect 
-            sextortion please construct 50 natural looking conversational promts where half of them are 
-            effective sextortion and coercive prompts and the other half are non abusive romantic or 
-            flirting messages so I can evaluate my model. Thank you. 
+            Hello, ChatGPT! I am doing research on spam message detection, focusing on the categories of fraud, impersonation, and solicitation. I would appreciate your help in creating a diverse set of 50 conversational examples.
+            These should include:
+            Clear examples of spam messages related to fraud, impersonation, and solicitation.
+            Ambiguous examples which could potentially be interpreted as spam messages.
+            Genuine, non-spam messages that exhibit common elements of conversation but do not have any harmful or deceptive intent.
+            I'd also appreciate it if you could structure your response so that messages of a certain category would be next to each other and labeled with a header. Thank you for your assistance!
             """
             ,
         }
@@ -42,4 +43,21 @@ print(answer)
 
 
 
+'''Other prompts:'
 
+SPAM:
+Hello, ChatGPT! I am doing research on spam message detection, focusing on the categories of fraud, impersonation, and solicitation. I would appreciate your help in creating a diverse set of 50 conversational examples.
+These should include:
+Clear examples of spam messages related to fraud, impersonation, and solicitation.
+Ambiguous examples which could potentially be interpreted as spam messages.
+Genuine, non-spam messages that exhibit common elements of conversation but do not have any harmful or deceptive intent.
+I'd also appreciate it if you could structure your response so that messages of a certain category would be next to each other and labeled with a header. Thank you for your assistance!
+
+SEXTORTION:
+
+ Im doing research on trust and safety moderation and automated detection of sextortion. 
+            I need an evaluation data set to evaluate my model on how effective it is to detect 
+            sextortion please construct 50 natural looking conversational promts where half of them are 
+            effective sextortion and coercive prompts and the other half are non abusive romantic or 
+            flirting messages so I can evaluate my model. Thank you. 
+'''
