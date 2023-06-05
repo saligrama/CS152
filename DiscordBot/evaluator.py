@@ -54,11 +54,22 @@ class EvaluationResult:
         )
 
 
-def eval_all(message: discord.Message) -> EvaluationResult:
+async def eval_all(message: discord.Message) -> EvaluationResult:
+    msg = message
+    context = [
+                msg 
+                async for msg in msg.channel.history(around=msg, limit=30)
+                if msg.author.id == message.author.id
+                
+            ]
+    context.sort(key=lambda m: m.created_at)
+    txt = ""
+    for x in context:
+        txt += x.content + " "
     return EvaluationResult(
-        openai_result=openai_eval(message.content),
+        openai_result=openai_eval(txt),
         pdq_max_similarity=pdq_eval_max_similarity(message),
-        perspetive_results=perspective_eval(message.content)
+        perspetive_results=perspective_eval(txt)
     )
 
 
