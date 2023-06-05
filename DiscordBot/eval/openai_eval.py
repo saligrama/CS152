@@ -1,0 +1,69 @@
+import csv
+import json
+import openai
+from typing import Dict
+
+OPENAI_PROMPT = open("prompts/moderator.txt", "r").read()
+OPENAI_EXAMPLES_GENERIC = [
+    {"role": "assistant", "content": json.dumps(d["content"])}
+    if d["role"] == "assistant"
+    else d
+    for d in json.load(open("prompts/generic.json", "r"))
+]
+OPENAI_EXAMPLES_SEXTORTION = [
+    {"role": "assistant", "content": json.dumps(d["content"])}
+    if d["role"] == "assistant"
+    else d
+    for d in json.load(open("prompts/sextortion.json", "r"))
+]
+
+
+def openai_eval(text: str) -> Dict[str, str]:
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": OPENAI_PROMPT},
+                *OPENAI_EXAMPLES_GENERIC,
+                *OPENAI_EXAMPLES_SEXTORTION,
+                {"role": "user", "content": text},
+            ],
+        )
+
+        return json.loads(response["choices"][0]["message"]["content"])
+    except:
+        return {"suggested_action": "ACTION_NONE"}
+
+
+if __name__ == "__main__":
+    matched_action = 0
+    expected_classified = 0
+    tp_classified = 0
+    fp_classified = 0
+    tn_unclassified = 0
+    fn_unclassified = 0
+    for i, line in enumerate(csv.reader(open("prompts/eval.json", "r"))):
+        user_content, expected_classification = line[0], line[1]
+        if expected_classification != "NONE":
+            expected_classification += 1
+
+        result = openai_eval(user_content)
+        if result["suggested_action"] == "ACTION_NONE":
+            if expected_classification == "NONE":
+                tn_unclassified += 1
+            else:
+                fn_unclassified += 1
+        else:
+            if expected_classification == "NONE":
+                fp_classified += 1
+            else:
+                tp_classified += 1
+                if expected_classification == result["subtype"] or (
+                    "subsubtype" in result.keys()
+                    and expected_classification == result["subsubtype"]
+                ):
+                    matched_action += 1
+
+        print(
+            f"After example {i} EC={expected_classified} MA={matched_action/expected_classified} TP={tp_classified/(i+1)} FP={fp_classified/(i+1)} TN={tn_unclassified/(i+1)} FN={fn_unclassified/(i+1)}"
+        )
