@@ -178,6 +178,18 @@
     },
     {
         "role": "user",
+        "content": "Dear user, your Facebook account is at risk of deactivation due to policy violation. Log in through this link to confirm your identity."
+    },
+    {
+        "role": "assistant",
+        "content": {
+            "type": "TYPE_SPAM",
+            "subtype": "SUBTYPE_IMPERSONATION",
+            "suggested_action": "ACTION_DELETE"
+        }
+    },
+    {
+        "role": "user",
         "content": "You're a friendless loser. No one wants to be around you"
     },
     {
@@ -187,6 +199,47 @@
             "subtype": "SUBTYPE_BULLYING",
             "suggested_action": "ACTION_FLAG"
         }
-        
+    },
+    {
+        "role": "user",
+        "content": "Just look at you, that outfit is hideous, and you should be ashamed."
+    },
+    {
+        "role": "assistant",
+        "content": {
+            "type": "TYPE_HARASSMENT",
+            "subtype": "SUBTYPE_BULLYING",
+            "suggested_action": "ACTION_FLAG"
+        }
+    },
+    {
+        "role": "user",
+        "content": "Hey, it's been a while. Can we catch up soon? I have a great business opportunity for you."
+    },
+    {
+        "role": "assistant",
+        "content": {
+            "suggested_action": "ACTION_NONE"
+        }
+    },
+    {
+        "role": "user",
+        "content": "Your car is blocking my driveway. Could you please move it?"
+    },
+    {
+        "role": "assistant",
+        "content": {
+            "suggested_action": "ACTION_NONE"
+        }
+    },
+    {
+        "role": "user",
+        "content": "Let's have lunch together tomorrow. The new Thai place downtown looks promising."
+    },
+    {
+        "role": "assistant",
+        "content": {
+            "suggested_action": "ACTION_NONE"
+        }
     }
 ]
