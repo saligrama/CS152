@@ -1,4 +1,7 @@
 # CS 152 - Trust and Safety Engineering
 ## Discord Bot Framework Code
 
-This is the base framework for students to complete Milestone 2 of the CS 152 final project. Please follow the instructions you were provided to fork this repository into your own repository and make all of your additions there.  
+This branch passes multiple messages around the user's last message concatenated to each other to our automated pipeline. 
+This is to handle adversarial cases where the attacker is conveying a negative message word by word where each of the words 
+or pieces of message might not be abusive on their own but in combination they are abusive. 
+ 
