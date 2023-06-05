@@ -17,6 +17,10 @@ OPENAI_EXAMPLES_SEXTORTION = [
     for d in json.load(open("prompts/sextortion.json", "r"))
 ]
 
+with open("tokens.json", "r") as f:
+    tokens = json.load(f)
+    openai.organization = tokens["openai"]["organization"]
+    openai.api_key = tokens["openai"]["api_key"]
 
 def openai_eval(text: str) -> Dict[str, str]:
     try:
@@ -31,7 +35,8 @@ def openai_eval(text: str) -> Dict[str, str]:
         )
 
         return json.loads(response["choices"][0]["message"]["content"])
-    except:
+    except Exception as e:
+        print(e)
         return {"suggested_action": "ACTION_NONE"}
 
 
@@ -41,11 +46,14 @@ if __name__ == "__main__":
     tp, fp, tn, fn = 0, 0, 0, 0
     with open("eval/openai_eval_results.csv", "w") as eout:
         writer = csv.writer(eout)
-        for i, line in enumerate(csv.reader(open("eval/openai_eval.csv", "r"))):
+        for i, line in enumerate(csv.reader(open("eval/openai_eval_dataset.csv", "r"))):
+            if i > 5:
+                break
             user_content, expected_classification = line[0], line[1]
-            if expected_classification != "NONE":
-                expected_classification += 1
+            if expected_classification != "ACTION_NONE":
+                expected_classified += 1
 
+            result = openai_eval(user_content)
             openai_classification = (
                 result["suggested_action"]
                 if result["suggested_action"] == "ACTION_NONE"
@@ -56,14 +64,14 @@ if __name__ == "__main__":
                 )
             )
 
-            result = openai_eval(user_content)
+            print(openai_classification)
             if openai_classification == "ACTION_NONE":
-                if expected_classification == "NONE":
+                if expected_classification == "ACTION_NONE":
                     tn += 1
                 else:
                     fn += 1
             else:
-                if expected_classification == "NONE":
+                if expected_classification == "ACTION_NONE":
                     fp += 1
                 else:
                     tp += 1
