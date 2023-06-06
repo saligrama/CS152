@@ -73,7 +73,7 @@ def eval_all(message: discord.Message) -> EvaluationResult:
     return EvaluationResult(
         openai_result=openai_eval(message.content),
         pdq_max_similarity=pdq_eval_max_similarity(message),
-        perspective_results=perspective_eval(message.content),
+        perspective_results=perspective_eval(message.content) if message.content else {},
     )
 
 

@@ -111,8 +111,6 @@ class ModBot(discord.Client):
 
         if not message.guild:
             return
-        # the automatic detection pipeline function to be implemented
-        await self.handle_automatic_detection(message)
 
         # Check if this message was sent in a server ("guild") or if it's a DM
         if message.guild:
@@ -150,7 +148,7 @@ class ModBot(discord.Client):
             await self.do_mod_flow(mod_channel, rp, message, results)
         elif (
             results.pdq_max_similarity > 0.9
-        ):  # TODO maybe at 0.96 or so also autodelete
+        ):  # maybe at 0.97 or so also autodelete and autoban
             mod_channel = self.mod_channels[message.guild.id]
             rp = Report(self)
             rp.state = rp.report_complete
@@ -165,6 +163,12 @@ class ModBot(discord.Client):
             ]
             rp.context.sort(key=lambda m: m.created_at)
             await self.do_mod_flow(mod_channel, rp, message, results)
+            if results.pdq_max_similarity > 0.97:
+                # also autodelete high-confidence known NCII
+                # this is also high probability an abusive account so we can safely ban
+                self.banned_users.add(message.author.id)
+                await message.delete()
+
 
     async def handle_user_message(self, message: discord.Message):
         # Handle a help message
@@ -173,6 +177,9 @@ class ModBot(discord.Client):
             reply += "Use the `cancel` command to cancel the report process.\n"
             await message.channel.send(reply)
             return
+
+        # the automatic detection pipeline function to be implemented
+        await self.handle_automatic_detection(message)
 
         author_id = message.author.id
         responses = []

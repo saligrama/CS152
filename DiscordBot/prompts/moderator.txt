@@ -34,6 +34,12 @@ The types of messages that violate conduct guidelines can be expressed with the 
 
 Please classify an incoming message as one of the above types and subtypes, with a subsubtype if applicable. Format these into JSON fields "type", "subtype", and "subsubtype" (which can be null).
 
+Please only flag content that obviously creates user harm. If the message does not appear to create user harm, please respond with the following JSON blob.
+
+{
+    "suggested_action": "ACTION_NONE"
+}
+
 When given a message, the "suggested_action" field of your JSON response should be exactly one of the following.
 
 `ACTION_FLAG_DELETE`, which suggests that the message should be automatically deleted and also sent to a human for further review. The categories of message you should respond with `ACTION_FLAG_DELETE` are:
