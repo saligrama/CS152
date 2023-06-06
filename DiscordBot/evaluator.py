@@ -123,7 +123,7 @@ def pdq_eval_max_similarity(message: discord.Message) -> Optional[float]:
 def perspective_eval(text: str) -> Dict[str, float]:
     detection = False
     detected_cats: Dict[str, float] = {}
-    reqatts = {"SEVERE_TOXICITY": {}, "THREAT": {}, "IDENTITY_ATTACK": {}}
+    reqatts = {"SEVERE_TOXICITY": {}, "THREAT": {}, "IDENTITY_ATTACK": {}, "TOXICITY": {}, "PROFANITY":{}, "INSULT":{}}
     analyze_request = {"comment": {"text": text}, "requestedAttributes": reqatts}
 
     response = perspective_client.comments().analyze(body=analyze_request).execute()
