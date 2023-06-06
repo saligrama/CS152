@@ -128,7 +128,7 @@ def perspective_eval(text: str) -> Dict[str, float]:
 
     response = perspective_client.comments().analyze(body=analyze_request).execute()
     for category in reqatts.keys():
-        if response["attributeScores"][category]["summaryScore"]["value"] > 0.5:
+        if response["attributeScores"][category]["summaryScore"]["value"] > 0.06:
             detected_cats[category] = response["attributeScores"][category][
                 "summaryScore"
             ]["value"]
