@@ -37,7 +37,7 @@ for i, line in enumerate(csv.reader(open("eval.csv", "r"))):
   response = client.comments().analyze(body=analyze_request).execute()
   persAbs = False
   for x in reqatts.keys():
-    if response["attributeScores"][x]["summaryScore"]["value"] > 0.07: 
+    if response["attributeScores"][x]["summaryScore"]["value"] > 0.02: 
       persAbs = True
   if (expected_classification != "ACTION_NONE"): 
     if persAbs: 
