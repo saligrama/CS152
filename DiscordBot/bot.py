@@ -111,8 +111,6 @@ class ModBot(discord.Client):
 
         if not message.guild:
             return
-        # the automatic detection pipeline function to be implemented
-        await self.handle_automatic_detection(message)
 
         # Check if this message was sent in a server ("guild") or if it's a DM
         if message.guild:
@@ -179,6 +177,9 @@ class ModBot(discord.Client):
             reply += "Use the `cancel` command to cancel the report process.\n"
             await message.channel.send(reply)
             return
+
+        # the automatic detection pipeline function to be implemented
+        await self.handle_automatic_detection(message)
 
         author_id = message.author.id
         responses = []
