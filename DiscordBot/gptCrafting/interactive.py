@@ -21,8 +21,8 @@ with open(token_path) as f:
 
 i = 1
 while True:
-    response = input("Victim: ")
-    content =  response
+    response = input("Type a message: ")
+    content = "Message Number " + str(i) + ": " + response
     i += 1
     answer = openai.ChatCompletion.create(
         model="gpt-4",
@@ -37,7 +37,7 @@ while True:
                 Try to be as relatable as possible.  After the first few interactions you can work your way towards asking for a call in order to get to know the person
                 even better.  Try to avoid explicitly stating intimate expressions and requests but you can work towards that direction.
 
-                Do not include anythign but your answer in your response.
+                Do not include message number in your answer.
                 """
                 ,
             },
