@@ -1,4 +1,11 @@
 tokens.json
 __pycache__
 env/
+<<<<<<< HEAD
 gptCrafting/
+=======
+eval/eval.csv
+.DS_Store
+
+
+>>>>>>> 8d92e98c02bd46d99c84a37ba05130d37cef1cc4

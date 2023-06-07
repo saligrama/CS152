@@ -30,7 +30,7 @@ class Review:
         report: Report,
         malicious_reports: MaliciousReports,
         banned_users,
-        openai_result: Optional[evaluator.EvaluationResult] = None,
+        eval_result: Optional[evaluator.EvaluationResult] = None,
     ):
         self.state = ModState.MOD_REPORT_INACTIVE
         self.reporting_message = reporting_message
@@ -46,12 +46,12 @@ class Review:
 
         self.began = False
 
-        self.openai_result = openai_result
+        self.eval_result = eval_result
 
     def handle_emoji(message: discord.Message, emoji):
         return
 
-    def is_done(self):
+    def is_done(self) -> bool:
         return self.began and self.state == ModState.MOD_REPORT_INACTIVE
 
     async def handle_raw_reaction(self, payload: discord.RawReactionActionEvent):
@@ -103,10 +103,10 @@ class Review:
             f"**Reported for**: {self.report.category} -> {self.report.subcategory} -> {self.report.subsubcategory}"
         )
 
-        if not self.openai_result:
-            self.openai_result = evaluator.eval_all(self.report.message)
+        if not self.eval_result:
+            self.eval_result = evaluator.eval_all(self.report.message)
 
-        await self.mod_channel.send(self.openai_result.pretty_print())
+        await self.mod_channel.send(self.eval_result.pretty_print())
 
         await self.mod_channel.send("## Begin review response")
 

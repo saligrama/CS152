@@ -35,4 +35,4 @@ methods."
 
 This is reflected in our observations: adversarial edits, including crops, do not match well. Furthermore, NCII is a difficult domain to apply generic classification or recognition algorithms because a qualitatively identical image with only a different subject and recipient could be bad in one case and okay in another.
 
-Semantic hashing is still important to include in an abuse detection setting: known near-verbatim images, such as those collected in the StopNCII database, can be detected and preemptively stopped with high confidence, and accounts which trigger such detections even once can be flagged for further investigation.
+Syntactic hashing is still important to include in an abuse detection setting: known near-verbatim images, such as those collected in the StopNCII database, can be detected and preemptively stopped with high confidence, and accounts which trigger such detections even once can be flagged for further investigation.

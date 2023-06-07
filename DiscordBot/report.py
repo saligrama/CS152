@@ -1,4 +1,5 @@
 from enum import Enum, auto
+from typing import List
 import discord
 import re
 
@@ -52,10 +53,12 @@ class Report:
         self.client = client
         self.message = None
         self.context = None
-        self.perspective_categories = self.category = self.subcategory = self.subsubcategory = None
+        self.perspective_categories = (
+            self.category
+        ) = self.subcategory = self.subsubcategory = None
         self.imminent_danger = False
 
-    async def handle_message(self, message: discord.Message):
+    async def handle_message(self, message: discord.Message) -> List[str]:
         """
         This function makes up the meat of the user-side reporting flow. It defines how we transition between states and what
         prompts to offer at each of those states. You're welcome to change anything you want; this skeleton is just here to
@@ -232,5 +235,5 @@ class Report:
                 ]
         return []
 
-    def report_complete(self):
+    def report_complete(self) -> bool:
         return self.state == State.REPORT_COMPLETE
